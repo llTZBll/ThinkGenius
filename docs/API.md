@@ -12,7 +12,9 @@ ThinkGenius2 是一个基于 Spring Boot 的智能块管理系统，提供块管
 
 ## 认证
 
-所有API都需要在请求参数中提供 `userId` 进行用户身份验证。
+本 API 使用 JWT (JSON Web Token) 进行认证。用户在登录后会获取一个 token，后续所有需要认证的请求都必须在 `Authorization` 请求头中携带此 token。
+
+- **Header**: `Authorization: Bearer <Your-JWT-Token>`
 
 ## API 接口
 
@@ -254,11 +256,11 @@ GET /api/relations/stats?userId={userId}
 
 #### 3.1 生成关键词
 ```http
-POST /api/ai/keywords
+POST /api/ai/generate-keywords
 Content-Type: application/json
 
 {
-  "content": "要分析的文本内容"
+  "content": "人工智能"
 }
 ```
 
@@ -288,7 +290,7 @@ POST /api/ai/analyze
 Content-Type: application/json
 
 {
-  "content": "要分析的文本内容"
+  "content": "请介绍一下"深度学习"。"
 }
 ```
 
@@ -320,9 +322,9 @@ POST /api/auth/register
 Content-Type: application/json
 
 {
-  "username": "用户名",
-  "password": "密码",
-  "email": "邮箱"
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "password123"
 }
 ```
 
@@ -332,14 +334,14 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "username": "用户名",
-  "password": "密码"
+  "username": "testuser",
+  "password": "password123"
 }
 ```
 
-#### 4.3 获取用户信息
+#### 4.3 获取当前用户信息
 ```http
-GET /api/auth/user
+GET /api/auth/me
 Authorization: Bearer {jwt-token}
 ```
 
