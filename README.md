@@ -2,7 +2,9 @@
 
 ThinkGenius 是一款将大型语言模型（LLM）的强大功能与思维导图和白板等可视化工具相结合的 AI 智能工具，旨在超越传统的文本聊天，增强您的思考、学习和创作过程。
 
-![ThinkGenius App Screenshot](docs/images/screenshot.png)
+<img src="docs/images/HomePage.png" alt="HomePage"  />
+
+<img src="docs/images/mainpage.png" alt="mainpage"  />
 
 ## ✨ 功能亮点
 
@@ -104,6 +106,7 @@ ThinkGenius2/
 
 - [**API 文档**](./docs/API.md): 了解所有后端 API 的详细信息。
 - [**算法文档**](./docs/ALGORITHM.md): 深入了解画布布局和连接线算法。
+- [**数据库文档**](./docs/DATABASE.md): 查看数据库的集合和结构。
 
 ---
 
