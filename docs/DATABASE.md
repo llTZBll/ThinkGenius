@@ -2,6 +2,8 @@
 
 本文档详细描述了 ThinkGenius 项目使用的 MongoDB 数据库结构。
 
+![数据库.drawio](images/数据库.drawio.png)
+
 ## 概述
 
 我们使用 MongoDB 是因为它灵活的文档模型非常适合存储思维导图中的非结构化和半结构化数据，如块（Blocks）和它们之间的关系。

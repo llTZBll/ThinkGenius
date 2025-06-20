@@ -1,0 +1,105 @@
+<mxfile host="app.diagrams.net" modified="2024-07-28T10:10:00.000Z" agent="AI" etag="UML1" version="24.4.0" type="embed">
+  <diagram id="uml-entities" name="UML Class Diagram">
+    <mxGraphModel dx="1434" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- User class -->
+        <mxCell id="User" value="&lt;b&gt;User&lt;/b&gt;" style="swimlane;fontStyle=1;horizontal=0;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="220" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="User-fields" value="- id: String\n- username: String\n- password: String\n- email: String\n- enabled: boolean" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="User">
+          <mxGeometry y="30" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="User-methods" value="+ getUsername(): String\n+ getPassword(): String\n+ getEmail(): String\n+ isEnabled(): boolean\n+ getAuthorities(): Collection" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="User">
+          <mxGeometry y="110" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Block class -->
+        <mxCell id="Block" value="&lt;b&gt;Block&lt;/b&gt;" style="swimlane;fontStyle=1;horizontal=0;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="340" y="60" width="260" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="Block-fields" value="- id: String\n- type: String\n- position: Position\n- size: Size\n- content: String\n- userId: String\n- createdAt: LocalDateTime\n- updatedAt: LocalDateTime" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="Block">
+          <mxGeometry y="30" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Block-methods" value="+ getId(): String\n+ getType(): String\n+ getPosition(): Position\n+ getSize(): Size\n+ getContent(): String\n+ getUserId(): String" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="Block">
+          <mxGeometry y="150" width="260" height="80" as="geometry" />
+        </mxCell>
+        <!-- Block.Position inner class -->
+        <mxCell id="BlockPosition" value="&lt;b&gt;Block.Position&lt;/b&gt;\n- x: double\n- y: double" style="swimlane;fontStyle=1;horizontal=0;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="650" y="60" width="140" height="80" as="geometry" />
+        </mxCell>
+        <!-- Block.Size inner class -->
+        <mxCell id="BlockSize" value="&lt;b&gt;Block.Size&lt;/b&gt;\n- width: double\n- height: double" style="swimlane;fontStyle=1;horizontal=0;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="650" y="160" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- BlockRelation class -->
+        <mxCell id="BlockRelation" value="&lt;b&gt;BlockRelation&lt;/b&gt;" style="swimlane;fontStyle=1;horizontal=0;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="340" y="370" width="260" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="BlockRelation-fields" value="- id: String\n- sourceBlockId: String\n- targetBlockId: String\n- relationType: String\n- userId: String\n- createdAt: LocalDateTime" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="BlockRelation">
+          <mxGeometry y="30" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="BlockRelation-methods" value="+ getSourceBlockId(): String\n+ getTargetBlockId(): String\n+ getRelationType(): String\n+ getUserId(): String" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="BlockRelation">
+          <mxGeometry y="120" width="260" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Keyword class -->
+        <mxCell id="Keyword" value="&lt;b&gt;Keyword&lt;/b&gt;" style="swimlane;fontStyle=1;horizontal=0;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="60" y="370" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Keyword-fields" value="- id: String\n- word: String\n- userId: String" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="Keyword">
+          <mxGeometry y="30" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Keyword-methods" value="+ getWord(): String\n+ getUserId(): String" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;whiteSpace=wrap;" vertex="1" parent="Keyword">
+          <mxGeometry y="80" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Associations -->
+        <!-- Block.userId -->
+        <mxCell id="assoc-block-user" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="Block" target="User">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- BlockRelation.userId -->
+        <mxCell id="assoc-blockrelation-user" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;strokeColor=#b85450;" edge="1" parent="1" source="BlockRelation" target="User">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Keyword.userId -->
+        <mxCell id="assoc-keyword-user" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;strokeColor=#82b366;" edge="1" parent="1" source="Keyword" target="User">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- BlockRelation.sourceBlockId -->
+        <mxCell id="assoc-blockrelation-sourceblock" style="edgeStyle=orthogonalEdgeStyle;endArrow=open;endFill=0;strokeColor=#9673a6;dashed=1;" edge="1" parent="1" source="BlockRelation" target="Block">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="470" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- BlockRelation.targetBlockId -->
+        <mxCell id="assoc-blockrelation-targetblock" style="edgeStyle=orthogonalEdgeStyle;endArrow=open;endFill=0;strokeColor=#9673a6;dashed=1;" edge="1" parent="1" source="BlockRelation" target="Block">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="570" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- Block.Position and Block.Size composition -->
+        <mxCell id="comp-block-position" style="edgeStyle=orthogonalEdgeStyle;endArrow=diamondThin;endFill=1;strokeColor=#d6b656;" edge="1" parent="1" source="Block" target="BlockPosition">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="comp-block-size" style="edgeStyle=orthogonalEdgeStyle;endArrow=diamondThin;endFill=1;strokeColor=#d6b656;" edge="1" parent="1" source="Block" target="BlockSize">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 

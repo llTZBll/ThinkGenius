@@ -26,16 +26,15 @@ ThinkGenius 是一款将大型语言模型（LLM）的强大功能与思维导�
   - [Tailwind CSS](https://tailwindcss.com/)
   - [Markdown-it](https://github.com/markdown-it/markdown-it)
   - [Axios](https://axios-http.com/)
-
 - **后端**:
   - [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
   - [Spring Boot 3](https://spring.io/projects/spring-boot)
   - [Maven](https://maven.apache.org/)
   - [Spring Security](https://spring.io/projects/spring-security)
   - [JWT (Java Web Token)](https://jwt.io/)
-
 - **数据库**:
   - [MongoDB](https://www.mongodb.com/)
+  - ![数据库.drawio](docs/images/数据库.drawio.png)
 
 ## 📂 项目结构
 

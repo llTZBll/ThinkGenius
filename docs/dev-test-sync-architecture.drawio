@@ -1,0 +1,171 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+  <diagram name="ThinkGenius2-Dev-Test-Sync-Architecture" id="dev-test-sync-diagram">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- 标题 -->
+        <mxCell id="title" value="ThinkGenius2 开发与测试同步架构图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=28;fontStyle=1;fontColor=#1a237e;" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="600" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- 开发阶段 -->
+        <mxCell id="development-phase-title" value="开发阶段 (Development Phase)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#2196f3;" vertex="1" parent="1">
+          <mxGeometry x="50" y="80" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- 需求分析 -->
+        <mxCell id="requirements" value="需求分析&#xa;&#xa;• 功能需求&#xa;• 非功能需求&#xa;• 用户故事&#xa;• 验收标准&#xa;• 测试用例设计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2196f3;strokeColor=#1976d2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#1976d2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="50" y="120" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 设计阶段 -->
+        <mxCell id="design" value="设计阶段&#xa;&#xa;• 系统架构设计&#xa;• 数据库设计&#xa;• API设计&#xa;• UI/UX设计&#xa;• 测试策略制定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2196f3;strokeColor=#1976d2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#1976d2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="280" y="120" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 编码阶段 -->
+        <mxCell id="coding" value="编码阶段&#xa;&#xa;• 前端开发 (Vue 3)&#xa;• 后端开发 (Spring Boot)&#xa;• 数据库实现&#xa;• API实现&#xa;• 单元测试编写" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2196f3;strokeColor=#1976d2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#1976d2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="510" y="120" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 代码审查 -->
+        <mxCell id="code-review" value="代码审查&#xa;&#xa;• 代码质量检查&#xa;• 安全漏洞扫描&#xa;• 性能优化&#xa;• 最佳实践检查&#xa;• 测试覆盖率检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2196f3;strokeColor=#1976d2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#1976d2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="740" y="120" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 测试阶段 -->
+        <mxCell id="testing-phase-title" value="测试阶段 (Testing Phase)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#4caf50;" vertex="1" parent="1">
+          <mxGeometry x="50" y="280" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- 单元测试 -->
+        <mxCell id="unit-testing" value="单元测试&#xa;&#xa;• JUnit 5 (后端)&#xa;• Jest/Vitest (前端)&#xa;• Mockito (Mock)&#xa;• 组件测试&#xa;• 工具函数测试" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4caf50;strokeColor=#388e3c;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#388e3c;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="50" y="320" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 集成测试 -->
+        <mxCell id="integration-testing" value="集成测试&#xa;&#xa;• Spring Boot Test&#xa;• API集成测试&#xa;• 数据库集成测试&#xa;• 前端路由测试&#xa;• 状态管理测试" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4caf50;strokeColor=#388e3c;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#388e3c;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="280" y="320" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 系统测试 -->
+        <mxCell id="system-testing" value="系统测试&#xa;&#xa;• 端到端测试&#xa;• 用户场景测试&#xa;• 性能测试&#xa;• 安全测试&#xa;• 兼容性测试" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4caf50;strokeColor=#388e3c;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#388e3c;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="510" y="320" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 验收测试 -->
+        <mxCell id="acceptance-testing" value="验收测试&#xa;&#xa;• 用户验收测试&#xa;• 业务逻辑验证&#xa;• 功能完整性检查&#xa;• 用户体验测试&#xa;• 文档验证" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4caf50;strokeColor=#388e3c;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#388e3c;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="740" y="320" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- CI/CD流水线 -->
+        <mxCell id="cicd-title" value="CI/CD 流水线 (Continuous Integration/Deployment)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#ff9800;" vertex="1" parent="1">
+          <mxGeometry x="50" y="480" width="500" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- 代码提交 -->
+        <mxCell id="code-commit" value="代码提交&#xa;&#xa;• Git Push&#xa;• 分支管理&#xa;• 提交信息规范&#xa;• 代码审查触发&#xa;• 自动化构建触发" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#f57c00;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#f57c00;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="50" y="520" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 自动化构建 -->
+        <mxCell id="auto-build" value="自动化构建&#xa;&#xa;• Maven Build&#xa;• npm Build&#xa;• 依赖检查&#xa;• 编译检查&#xa;• 静态代码分析" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#f57c00;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#f57c00;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="280" y="520" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 自动化测试 -->
+        <mxCell id="auto-testing" value="自动化测试&#xa;&#xa;• 单元测试执行&#xa;• 集成测试执行&#xa;• 测试覆盖率报告&#xa;• 测试结果分析&#xa;• 质量门禁检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#f57c00;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#f57c00;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="510" y="520" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 部署 -->
+        <mxCell id="deployment" value="部署&#xa;&#xa;• 测试环境部署&#xa;• 生产环境部署&#xa;• 数据库迁移&#xa;• 配置管理&#xa;• 监控配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#f57c00;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#f57c00;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="740" y="520" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 测试环境 -->
+        <mxCell id="test-environments-title" value="测试环境 (Test Environments)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#9c27b0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="660" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- 开发环境 -->
+        <mxCell id="dev-env" value="开发环境&#xa;(Development)&#xa;&#xa;• 本地开发&#xa;• 热重载&#xa;• 调试工具&#xa;• 模拟数据&#xa;• 快速迭代" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9c27b0;strokeColor=#7b1fa2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#7b1fa2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="50" y="700" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 测试环境 -->
+        <mxCell id="test-env" value="测试环境&#xa;(Testing)&#xa;&#xa;• 集成测试&#xa;• 系统测试&#xa;• 性能测试&#xa;• 自动化测试&#xa;• 测试数据管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9c27b0;strokeColor=#7b1fa2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#7b1fa2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="280" y="700" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 预生产环境 -->
+        <mxCell id="staging-env" value="预生产环境&#xa;(Staging)&#xa;&#xa;• 用户验收测试&#xa;• 生产环境模拟&#xa;• 最终验证&#xa;• 性能基准测试&#xa;• 安全测试" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9c27b0;strokeColor=#7b1fa2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#7b1fa2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="510" y="700" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 生产环境 -->
+        <mxCell id="prod-env" value="生产环境&#xa;(Production)&#xa;&#xa;• 真实用户访问&#xa;• 监控告警&#xa;• 日志分析&#xa;• 性能监控&#xa;• 故障恢复" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9c27b0;strokeColor=#7b1fa2;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#7b1fa2;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="740" y="700" width="200" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- 质量保证 -->
+        <mxCell id="qa-title" value="质量保证 (Quality Assurance)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#e91e63;" vertex="1" parent="1">
+          <mxGeometry x="50" y="860" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- 代码质量 -->
+        <mxCell id="code-quality" value="代码质量&#xa;&#xa;• SonarQube&#xa;• ESLint/Prettier&#xa;• Checkstyle&#xa;• 代码覆盖率&#xa;• 复杂度分析" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e91e63;strokeColor=#c2185b;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#c2185b;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="50" y="900" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 性能监控 -->
+        <mxCell id="performance-monitoring" value="性能监控&#xa;&#xa;• JMeter&#xa;• Gatling&#xa;• 应用性能监控&#xa;• 数据库性能&#xa;• 响应时间分析" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e91e63;strokeColor=#c2185b;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#c2185b;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="280" y="900" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 安全测试 -->
+        <mxCell id="security-testing" value="安全测试&#xa;&#xa;• OWASP ZAP&#xa;• 漏洞扫描&#xa;• 渗透测试&#xa;• 安全代码审查&#xa;• 合规性检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e91e63;strokeColor=#c2185b;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#c2185b;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="510" y="900" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 用户反馈 -->
+        <mxCell id="user-feedback" value="用户反馈&#xa;&#xa;• 用户测试&#xa;• 可用性测试&#xa;• 错误报告&#xa;• 功能建议&#xa;• 满意度调查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e91e63;strokeColor=#c2185b;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#c2185b;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="740" y="900" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 工具链 -->
+        <mxCell id="tools-title" value="开发与测试工具链" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#00bcd4;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="80" width="300" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- 版本控制 -->
+        <mxCell id="version-control" value="版本控制&#xa;&#xa;• Git&#xa;• GitHub/GitLab&#xa;• 分支策略&#xa;• 代码审查&#xa;• 合并请求" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00bcd4;strokeColor=#0097a7;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#0097a7;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="120" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- CI/CD工具 -->
+        <mxCell id="cicd-tools" value="CI/CD工具&#xa;&#xa;• Jenkins&#xa;• GitHub Actions&#xa;• GitLab CI&#xa;• Docker&#xa;• Kubernetes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00bcd4;strokeColor=#0097a7;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#0097a7;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="120" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 测试工具 -->
+        <mxCell id="testing-tools" value="测试工具&#xa;&#xa;• JUnit 5&#xa;• Jest/Cypress&#xa;• Postman&#xa;• JMeter&#xa;• Selenium" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00bcd4;strokeColor=#0097a7;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#0097a7;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="240" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 监控工具 -->
+        <mxCell id="monitoring-tools" value="监控工具&#xa;&#xa;• Prometheus&#xa;• Grafana&#xa;• ELK Stack&#xa;• APM工具&#xa;• 日志管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00bcd4;strokeColor=#0097a7;fontColor=#ffffff;fontSize=12;fontStyle=1;gradientColor=#0097a7;gradientDirection=north;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="240" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- 技术栈说明 -->
+        <mxCell id="tech-stack" value="开发测试同步策略: 敏捷开发 + 持续集成 + 自动化测试 + 质量门禁 | 工具链: Git + Jenkins + JUnit + Cypress + Docker" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1180" width="800" height="20" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 
