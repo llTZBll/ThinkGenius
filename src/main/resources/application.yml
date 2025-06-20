@@ -1,0 +1,37 @@
+server:
+  port: 8081
+
+spring:
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: thinkgenius
+      # 如有用户名密码，取消注释
+      # username: your-username
+      # password: your-password
+      # authentication-database: admin
+  web:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "*"
+      allowed-headers: "*"
+      allow-credentials: true
+
+logging:
+  level:
+    root: INFO
+    com.photo: DEBUG
+    org.springframework.web: DEBUG
+
+jwt:
+  secret: test-secret-key-for-development
+  expiration: 86400
+
+baidu:
+  qianfan:
+    api-key: test-api-key
+    secret-key: test-secret-key
+    model: ERNIE-Bot-4
+  api:
+    access-token: test-access-token 

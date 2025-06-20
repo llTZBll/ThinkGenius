@@ -1,0 +1,3181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI关键词生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.6/js/jsplumb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        neutral: '#1F2937',
+                        light: '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .mindmap-container {
+                @apply relative w-full h-[calc(100vh-2rem)] bg-white overflow-auto p-8;
+                cursor: default;
+                position: relative;
+            }
+            .mindmap-container.dragging {
+                cursor: grabbing !important;
+            }
+            .mindmap-content {
+                position: absolute;
+                min-width: 1200%;
+                min-height: 1200%;
+                transform-origin: 0 0;
+                left: -550%;
+                top: -550%;
+            }
+            .mindmap-node {
+                @apply absolute bg-white rounded-lg border border-gray-200 transition-all duration-300;
+                min-width: 180px;
+                cursor: default;
+                transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+            }
+            .mindmap-node.dragging {
+                cursor: grabbing !important;
+                transform: scale(1.05);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+            }
+            .mindmap-node:active {
+                cursor: grabbing;
+            }
+            .node-question {
+                @apply bg-white border-gray-200;
+                z-index: 20;
+            }
+            /* 更新后的关键词节点样式 */
+            .node-keyword {
+                @apply bg-white border border-gray-200 rounded-lg shadow-sm;
+                min-width: 240px;
+                z-index: 10;
+            }
+            .node-keyword .node-header {
+                @apply bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3 border-b border-gray-200 rounded-t-lg;
+            }
+            .node-keyword .node-title {
+                @apply text-lg font-semibold text-gray-800;
+            }
+            .node-keyword .node-content {
+                @apply px-4 py-3;
+            }
+            .node-keyword .node-item {
+                @apply flex items-center py-2 px-3 my-1 rounded-md hover:bg-gray-50 transition-colors;
+            }
+            .node-keyword .node-item i {
+                @apply text-blue-500 mr-2;
+            }
+            .node-keyword .node-actions {
+                @apply flex justify-end px-4 py-2 border-t border-gray-200;
+            }
+            .node-keyword .node-actions button {
+                @apply text-blue-500 hover:text-blue-700 text-sm font-medium;
+            }
+            .node-text {
+                @apply bg-white border-gray-200;
+                z-index: 5;
+            }
+            .node-header {
+                @apply p-2 flex items-center justify-between;
+            }
+            .node-type-badge {
+                @apply px-2 py-0.5 text-xs rounded-full font-medium text-gray-500 bg-gray-100;
+            }
+            .node-content {
+                @apply p-2;
+            }
+            .node-item {
+                @apply p-2 rounded text-sm flex items-center gap-2 hover:bg-gray-50;
+            }
+            .node-item i {
+                @apply text-gray-400;
+            }
+            .node-item.active {
+                @apply bg-gray-50;
+            }
+            .node-actions {
+                @apply flex gap-1 mt-2 px-2;
+            }
+            .node-action-btn {
+                @apply text-xs text-gray-500 hover:text-gray-700;
+            }
+            /* 对齐参考线样式 */
+            .guide {
+                position: absolute;
+                background: #4F46E5;
+                opacity: 0.5;
+                pointer-events: none;
+                transition: opacity 0.2s ease-out;
+            }
+            .guide.horizontal {
+                height: 1px;
+                width: 100%;
+            }
+            .guide.vertical {
+                width: 1px;
+                height: 100%;
+            }
+            /* 连接线样式 */
+            .jtk-connector {
+                z-index: 1;
+                transition: stroke 0.2s ease-out, stroke-width 0.2s ease-out;
+            }
+            .jtk-endpoint {
+                z-index: 2;
+            }
+            .jtk-overlay {
+                z-index: 3;
+            }
+            .connection-label {
+                background-color: white;
+                padding: 2px 5px;
+                border-radius: 10px;
+                border: 1px solid #94a3b8;
+                font-size: 10px;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            .jtk-connector:hover .connection-label {
+                opacity: 1;
+            }
+            .jtk-connector {
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <button id="openPanelBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow flex items-center transition-all duration-300">
+                <i class="fa fa-magic mr-2"></i>
+                <span>AI生成</span>
+            </button>
+            <h1 class="text-xl font-bold text-neutral">关键词生成器</h1>
+            <div id="userArea" class="flex items-center gap-4">
+                <button id="loginBtn" class="text-gray-600 hover:text-primary transition-colors">
+                    登录
+                </button>
+                <button id="registerBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-all duration-300">
+                    注册
+                </button>
+            </div>
+            <div id="userInfo" class="flex items-center gap-3 hidden">
+                <span class="text-gray-600" id="username"></span>
+                <button id="logoutBtn" class="text-gray-600 hover:text-red-500 transition-colors">
+                    退出
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <div class="text-center mb-12">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-neutral mb-4">探索AI生成的关键词</h2>
+            <div class="max-w-2xl mx-auto">
+                <p class="text-gray-600 mb-6">点击左上角按钮，输入提示词，获取人工智能相关关键词拓展，探索更多可能性</p>
+                <div class="relative">
+                    <input type="text" id="mainPrompt" placeholder="输入关键词..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary shadow-sm">
+                    <button id="mainGenerateBtn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-all duration-300">
+                        <i class="fa fa-rocket mr-1"></i>生成
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 示例卡片 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="h-48 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <i class="fa fa-lightbulb-o text-6xl text-primary/60"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-2">创意灵感</h3>
+                    <p class="text-gray-600">输入主题，获取相关创意关键词和拓展想法</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="h-48 bg-gradient-to-br from-blue-200 to-purple-200 flex items-center justify-center">
+                    <i class="fa fa-search text-6xl text-blue-500/60"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-2">关键词研究</h3>
+                    <p class="text-gray-600">拓展您的搜索词，发现更多相关主题和内容</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="h-48 bg-gradient-to-br from-green-200 to-teal-200 flex items-center justify-center">
+                    <i class="fa fa-puzzle-piece text-6xl text-green-500/60"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-2">内容拓展</h3>
+                    <p class="text-gray-600">深入挖掘主题，获取相关文本和内容建议</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 结果页面 -->
+    <div id="resultPage" class="fixed inset-0 bg-white z-50 hidden">
+        <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-40">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <button id="backToHomeBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow flex items-center transition-all duration-300">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    <span>返回</span>
+                </button>
+                <h1 class="text-xl font-bold text-neutral">AI 思维导图</h1>
+                <div class="flex items-center gap-2">
+                    <button id="connectionManagerBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <i class="fa fa-link mr-1"></i>连接管理
+                    </button>
+                    <div class="w-10"></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="mindmap-container" id="mindMapContainer">
+            <!-- 思维导图内容将在这里动态生成 -->
+        </div>
+    </div>
+
+    <footer class="bg-neutral text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-xl font-bold">AI关键词生成器</h2>
+                    <p class="text-gray-400 mt-1">由AI驱动的关键词拓展工具</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400">
+                <p>© 2025 AI关键词生成器. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 登录模态框 -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-neutral">登录</h3>
+                <button class="closeModal text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" name="username" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="loginUsernameError"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" name="password" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="loginPasswordError"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="ml-2 text-sm text-gray-600">记住我</span>
+                    </label>
+                    <a href="#" class="text-sm text-primary hover:text-primary/80">忘记密码？</a>
+                </div>
+                <button type="submit" disabled
+                    class="w-full bg-gray-400 text-white py-2 rounded-lg shadow transition-all duration-300">
+                    登录
+                </button>
+                <p class="text-center text-sm text-gray-600">
+                    还没有账号？
+                    <button type="button" id="switchToRegister" class="text-primary hover:text-primary/80">立即注册</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-neutral">注册</h3>
+                <button class="closeModal text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" name="username" required minlength="3" maxlength="20"
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerUsernameError"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                    <input type="email" name="email" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerEmailError"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" name="password" required minlength="6"
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerPasswordError"></div>
+                    <p class="text-xs text-gray-500 mt-1">至少6个字符</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">确认密码</label>
+                    <input type="password" name="confirmPassword" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerConfirmPasswordError"></div>
+                </div>
+                <button type="submit" disabled
+                    class="w-full bg-gray-400 text-white py-2 rounded-lg shadow transition-all duration-300">
+                    注册
+                </button>
+                <p class="text-center text-sm text-gray-600">
+                    已有账号？
+                    <button type="button" id="switchToLogin" class="text-primary hover:text-primary/80">立即登录</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API配置 - 注意：实际使用时需要替换为真实的API地址
+        const API_BASE_URL = 'http://localhost:8080/api';
+        
+        // 全局用户状态
+        let currentUser = null;
+        
+        // 画布拖拽相关变量
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let scrollLeft = 0;
+        let scrollTop = 0;
+        
+        // 布局算法工具函数
+        const LayoutUtils = {
+            // 网格大小
+            GRID_SIZE: 20,
+            // 最小节点间距
+            MIN_NODE_DISTANCE: 100,
+            // 一级节点径向布局半径
+            RADIAL_RADIUS: 300,
+            
+            // 将坐标吸附到网格
+            snapToGrid(value) {
+                return Math.round(value / this.GRID_SIZE) * this.GRID_SIZE;
+            },
+            
+            // 计算两点间距离
+            distance(x1, y1, x2, y2) {
+                return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            },
+            
+            // 检查节点碰撞
+            checkCollision(node1Rect, node2Rect, minDistance = this.MIN_NODE_DISTANCE) {
+                const centerX1 = node1Rect.left + node1Rect.width / 2;
+                const centerY1 = node1Rect.top + node1Rect.height / 2;
+                const centerX2 = node2Rect.left + node2Rect.width / 2;
+                const centerY2 = node2Rect.top + node2Rect.height / 2;
+                
+                const distance = this.distance(centerX1, centerY1, centerX2, centerY2);
+                
+                // 减少最小距离要求，让节点可以更靠近
+                const actualMinDistance = Math.min(minDistance, 80);
+                
+                // 只有在真正重叠时才认为有碰撞
+                const overlapX = Math.max(0, Math.min(node1Rect.left + node1Rect.width, node2Rect.left + node2Rect.width) - Math.max(node1Rect.left, node2Rect.left));
+                const overlapY = Math.max(0, Math.min(node1Rect.top + node1Rect.height, node2Rect.top + node2Rect.height) - Math.max(node1Rect.top, node2Rect.top));
+                
+                // 如果有实际重叠，或者距离太近，则认为有碰撞
+                return (overlapX > 0 && overlapY > 0) || distance < actualMinDistance;
+            },
+            
+            // 计算径向布局位置
+            getRadialPosition(index, totalNodes, centerX, centerY) {
+                // 计算角度（均匀分布在360度）
+                const angle = (index / totalNodes) * 2 * Math.PI;
+                // 添加随机偏移，避免完全对称
+                const radiusVariation = Math.random() * 50 - 25; // ±25px随机偏移
+                const radius = this.RADIAL_RADIUS + radiusVariation;
+                
+                return {
+                    x: this.snapToGrid(centerX + radius * Math.cos(angle)),
+                    y: this.snapToGrid(centerY + radius * Math.sin(angle))
+                };
+            },
+            
+            // 计算树状布局位置
+            getTreePosition(parentRect, index, totalNodes, level, existingNodes = [], parentNodeId = null) {
+                const parentCenterX = parentRect.left + parentRect.width / 2;
+                const parentCenterY = parentRect.top + parentRect.height / 2;
+                
+                // 分析父节点周围的空间占用情况
+                const directions = this.analyzeAvailableDirections(parentRect, existingNodes, level, parentNodeId);
+                
+                // 可选：调试可视化可用方向
+                // this.debugAvailableDirections(parentRect, directions, document.getElementById('mindMapContainer'));
+                
+                // 根据优先级选择最佳方向
+                const availableDirections = Object.entries(directions)
+                    .filter(([dir, info]) => info.available)
+                    .sort((a, b) => b[1].priority - a[1].priority);
+                
+                let x, y;
+                const horizontalSpacing = this.MIN_NODE_DISTANCE * (level === 0 ? 0.3 : 0.6) + (level * 15); // level 0使用更小间距
+                const verticalSpacing = this.MIN_NODE_DISTANCE * (level === 0 ? 0.4 : 0.8); // level 0使用更小间距
+                
+                if (availableDirections.length > 0) {
+                    // 选择优先级最高的方向
+                    const bestDirection = availableDirections[0][0];
+                    
+                    switch (bestDirection) {
+                        case 'right':
+                            x = this.snapToGrid(parentCenterX + horizontalSpacing);
+                            y = this.snapToGrid(parentCenterY + (index - (totalNodes - 1) / 2) * verticalSpacing);
+                            break;
+                        case 'left':
+                            x = this.snapToGrid(parentCenterX - horizontalSpacing);
+                            y = this.snapToGrid(parentCenterY + (index - (totalNodes - 1) / 2) * verticalSpacing);
+                            break;
+                        case 'down':
+                            x = this.snapToGrid(parentCenterX + (index - (totalNodes - 1) / 2) * horizontalSpacing);
+                            y = this.snapToGrid(parentCenterY + horizontalSpacing);
+                            break;
+                        case 'up':
+                            x = this.snapToGrid(parentCenterX + (index - (totalNodes - 1) / 2) * horizontalSpacing);
+                            y = this.snapToGrid(parentCenterY - horizontalSpacing);
+                            break;
+                        default:
+                            // 默认使用右侧
+                            x = this.snapToGrid(parentCenterX + horizontalSpacing);
+                            y = this.snapToGrid(parentCenterY + (index - (totalNodes - 1) / 2) * verticalSpacing);
+                    }
+                } else {
+                    // 如果所有方向都被占用，使用多列布局
+                    const columns = Math.ceil(Math.sqrt(totalNodes));
+                    const col = index % columns;
+                    const row = Math.floor(index / columns);
+                    
+                    x = this.snapToGrid(parentCenterX + (col - (columns - 1) / 2) * horizontalSpacing);
+                    y = this.snapToGrid(parentCenterY + horizontalSpacing + row * (this.MIN_NODE_DISTANCE * (level === 0 ? 0.4 : 0.8))); // level 0使用更小间距
+                }
+                
+                return { x, y };
+            },
+            
+            // 分析父节点周围可用方向
+            analyzeAvailableDirections(parentRect, existingNodes, level, parentNodeId = null) {
+                const directions = {
+                    up: { available: true, space: 0, childCount: 0 },
+                    down: { available: true, space: 0, childCount: 0 },
+                    left: { available: true, space: 0, childCount: 0 },
+                    right: { available: true, space: 0, childCount: 0 }
+                };
+                
+                const parentCenterX = parentRect.left + parentRect.width / 2;
+                const parentCenterY = parentRect.top + parentRect.height / 2;
+                const checkDistance = this.MIN_NODE_DISTANCE * (level === 0 ? 0.5 : 0.8) + (level * 15); // level 0使用更小检查距离
+                const minSpaceRequired = this.MIN_NODE_DISTANCE * (level === 0 ? 1.0 : 1.5); // level 0使用更小空间要求
+                
+                // 获取父节点的实际子节点（通过jsPlumb连接）
+                let actualChildNodes = [];
+                if (parentNodeId) {
+                    const parentElement = document.querySelector(`[data-id="${parentNodeId}"]`);
+                    if (parentElement) {
+                        const connections = jsPlumbInstance.getConnections({
+                            source: parentElement
+                        });
+                        actualChildNodes = connections.map(conn => conn.target);
+                    }
+                }
+                
+                // 分析每个方向的子节点和空间情况
+                existingNodes.forEach(node => {
+                    const nodeCenterX = node.left + node.width / 2;
+                    const nodeCenterY = node.top + node.height / 2;
+                    
+                    // 计算节点间的距离
+                    const distanceX = nodeCenterX - parentCenterX;
+                    const distanceY = nodeCenterY - parentCenterY;
+                    const absoluteDistanceX = Math.abs(distanceX);
+                    const absoluteDistanceY = Math.abs(distanceY);
+                    
+                    // 判断节点是否在检查范围内
+                    if (absoluteDistanceX < checkDistance && absoluteDistanceY < checkDistance) {
+                        // 判断节点在哪个方向
+                        let direction = null;
+                        let isChildNode = false;
+                        
+                        // 检查是否是当前父节点的子节点（通过连接关系）
+                        if (parentNodeId && node.dataset && node.dataset.id) {
+                            const nodeElement = document.querySelector(`[data-id="${node.dataset.id}"]`);
+                            if (nodeElement && actualChildNodes.includes(nodeElement)) {
+                                isChildNode = true;
+                            }
+                        }
+                        
+                        // 根据位置判断方向
+                        if (absoluteDistanceY > absoluteDistanceX) {
+                            // 垂直方向
+                            if (distanceY < 0) {
+                                direction = 'up';
+                            } else {
+                                direction = 'down';
+                            }
+                        } else {
+                            // 水平方向
+                            if (distanceX < 0) {
+                                direction = 'left';
+                            } else {
+                                direction = 'right';
+                            }
+                        }
+                        
+                        if (direction && directions[direction]) {
+                            // 如果是子节点，增加子节点计数
+                            if (isChildNode) {
+                                directions[direction].childCount++;
+                            }
+                            
+                            // 计算该方向的可用空间
+                            const nodeDistance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                            const nodeSpace = Math.max(node.width, node.height) + this.MIN_NODE_DISTANCE;
+                            
+                            // 如果节点太近，标记该方向不可用
+                            if (nodeDistance < minSpaceRequired) {
+                                directions[direction].available = false;
+                            } else {
+                                // 更新该方向的最大可用空间
+                                directions[direction].space = Math.max(directions[direction].space, nodeDistance - nodeSpace);
+                            }
+                        }
+                    }
+                });
+                
+                // 根据子节点数量和空间情况调整优先级
+                Object.keys(directions).forEach(direction => {
+                    const dir = directions[direction];
+                    
+                    // 如果有子节点，降低优先级
+                    if (dir.childCount > 0) {
+                        dir.priority = 100 - dir.childCount * 10; // 子节点越多，优先级越低
+                    } else {
+                        dir.priority = 100 + dir.space; // 没有子节点且空间充足，优先级高
+                    }
+                    
+                    // 如果空间不足，标记为不可用
+                    if (dir.space < minSpaceRequired) {
+                        dir.available = false;
+                    }
+                });
+                
+                return directions;
+            },
+            
+            // 避免节点重叠
+            avoidCollision(newNodeRect, existingNodes, containerRect) {
+                let adjustedX = newNodeRect.left;
+                let adjustedY = newNodeRect.top;
+                let attempts = 0;
+                const maxAttempts = 15; // 减少尝试次数，避免过度调整
+                
+                // 扩展容器边界，允许节点放置在更大的范围内
+                const extendedWidth = containerRect.width * 4;
+                const extendedHeight = containerRect.height * 4;
+                const offsetX = containerRect.width * 1.5;
+                const offsetY = containerRect.height * 1.5;
+                
+                // 首先检查初始位置是否有碰撞
+                let hasInitialCollision = false;
+                for (const existingNode of existingNodes) {
+                    if (this.checkCollision(
+                        { left: adjustedX, top: adjustedY, width: newNodeRect.width, height: newNodeRect.height },
+                        existingNode
+                    )) {
+                        hasInitialCollision = true;
+                        break;
+                    }
+                }
+                
+                // 如果没有初始碰撞，直接返回原位置
+                if (!hasInitialCollision) {
+                    return {
+                        x: this.snapToGrid(adjustedX),
+                        y: this.snapToGrid(adjustedY)
+                    };
+                }
+                
+                // 定义多个方向策略，优先选择更自然的方向
+                const directions = [
+                    { dx: 0, dy: this.MIN_NODE_DISTANCE * 0.8 }, // 向下，减少距离
+                    { dx: this.MIN_NODE_DISTANCE * 0.8, dy: 0 }, // 向右，减少距离
+                    { dx: -this.MIN_NODE_DISTANCE * 0.8, dy: 0 }, // 向左，减少距离
+                    { dx: 0, dy: -this.MIN_NODE_DISTANCE * 0.8 }, // 向上，减少距离
+                    { dx: this.MIN_NODE_DISTANCE * 0.6, dy: this.MIN_NODE_DISTANCE * 0.6 }, // 右下
+                    { dx: -this.MIN_NODE_DISTANCE * 0.6, dy: this.MIN_NODE_DISTANCE * 0.6 }, // 左下
+                ];
+                
+                while (attempts < maxAttempts) {
+                    let hasCollision = false;
+                    
+                    for (const existingNode of existingNodes) {
+                        if (this.checkCollision(
+                            { left: adjustedX, top: adjustedY, width: newNodeRect.width, height: newNodeRect.height },
+                            existingNode
+                        )) {
+                            hasCollision = true;
+                            
+                            // 使用循环方向策略
+                            const direction = directions[attempts % directions.length];
+                            adjustedX += direction.dx;
+                            adjustedY += direction.dy;
+                            
+                            // 如果超出扩展边界，尝试随机位置
+                            if (adjustedX < -offsetX || adjustedX + newNodeRect.width > extendedWidth - offsetX ||
+                                adjustedY < -offsetY || adjustedY + newNodeRect.height > extendedHeight - offsetY) {
+                                
+                                // 在扩展边界内随机选择位置，但更靠近原位置
+                                const randomOffset = 100;
+                                adjustedX = Math.random() * randomOffset - randomOffset/2 + newNodeRect.left;
+                                adjustedY = Math.random() * randomOffset - randomOffset/2 + newNodeRect.top;
+                                
+                                // 确保在边界内
+                                adjustedX = Math.max(-offsetX, Math.min(extendedWidth - offsetX - newNodeRect.width, adjustedX));
+                                adjustedY = Math.max(-offsetY, Math.min(extendedHeight - offsetY - newNodeRect.height, adjustedY));
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (!hasCollision) {
+                        break;
+                    }
+                    attempts++;
+                }
+                
+                // 如果仍然有碰撞，使用更保守的随机位置
+                if (attempts >= maxAttempts) {
+                    const margin = 50; // 减少边距
+                    adjustedX = Math.random() * (extendedWidth - newNodeRect.width - 2 * margin) - offsetX + margin;
+                    adjustedY = Math.random() * (extendedHeight - newNodeRect.height - 2 * margin) - offsetY + margin;
+                }
+                
+                return {
+                    x: this.snapToGrid(adjustedX),
+                    y: this.snapToGrid(adjustedY)
+                };
+            },
+            
+            // 调试功能已移除
+        };
+
+        // 生成关键词
+        async function generateKeywords(prompt) {
+            try {
+                // 模拟API调用
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve({
+                            id: Date.now(),
+                            title: '关键词结果',
+                            type: 'AI生成',
+                            prompt: prompt,
+                            keywords: JSON.stringify([
+                                `${prompt}应用`,
+                                `${prompt}技术`,
+                                `${prompt}发展`,
+                                `${prompt}趋势`,
+                                `${prompt}工具`,
+                                `${prompt}案例`,
+                                `${prompt}原理`
+                            ])
+                        });
+                    }, 800);
+                });
+            } catch (error) {
+                console.error('生成关键词失败:', error);
+                throw error;
+            }
+        }
+
+        // 获取历史记录
+        async function getKeywordHistory() {
+            try {
+                // 模拟API调用
+                const history = localStorage.getItem('keyword_history');
+                return history ? JSON.parse(history) : [];
+            } catch (error) {
+                console.error('获取历史记录失败:', error);
+                throw error;
+            }
+        }
+
+        // 保存关键词生成记录
+        async function saveKeyword(keyword) {
+            try {
+                // 模拟API调用
+                const history = await getKeywordHistory();
+                history.unshift(keyword);
+                localStorage.setItem('keyword_history', JSON.stringify(history));
+                return keyword;
+            } catch (error) {
+                console.error('保存记录失败:', error);
+                throw error;
+            }
+        }
+
+        // 获取单个记录
+        async function getKeywordById(id) {
+            try {
+                // 模拟API调用
+                const history = await getKeywordHistory();
+                return history.find(item => item.id === id);
+            } catch (error) {
+                console.error('获取记录失败:', error);
+                throw error;
+            }
+        }
+
+        // 初始化jsPlumb，优化配置
+        const jsPlumbInstance = jsPlumb.getInstance({
+            Connector: ["Flowchart", { stub: [20, 20], gap: 10, cornerRadius: 5, alwaysRespectStubs: true }],
+            Endpoint: ["Dot", { radius: 4 }],
+            PaintStyle: { 
+                stroke: '#94a3b8',
+                strokeWidth: 2
+            },
+            HoverPaintStyle: { 
+                stroke: '#4F46E5',
+                strokeWidth: 3,
+                outlineColor: '#fff',
+                outlineWidth: 2
+            },
+            ConnectionOverlays: [
+                ["Arrow", {
+                    location: 1,
+                    width: 10,
+                    length: 10,
+                    foldback: 0.8
+                }]
+            ],
+            Container: 'mindMapContainer',
+            Anchors: ["Center", "Center"],
+            DragOptions: {
+                cursor: 'move',
+                zIndex: 2000
+            },
+            MaxConnections: -1
+        });
+
+        // 绑定连接线事件
+        function bindConnectionEvents() {
+            // 为所有连接添加点击事件
+            jsPlumbInstance.bind("click", function(connection, originalEvent) {
+                // 阻止事件冒泡
+                originalEvent.stopPropagation();
+                
+                // 使用新的删除函数
+                deleteConnection(connection, true);
+            });
+
+            // 为所有连接添加悬停效果
+            jsPlumbInstance.bind("mouseenter", function(connection) {
+                connection.setPaintStyle({ 
+                    stroke: '#4F46E5',
+                    strokeWidth: 3
+                });
+                
+                // 显示删除提示
+                const connectionLabel = connection.getOverlay("label");
+                if (connectionLabel) {
+                    connectionLabel.setLabel(connectionLabel.getLabel() + " (点击删除)");
+                }
+            });
+
+            jsPlumbInstance.bind("mouseleave", function(connection) {
+                connection.setPaintStyle({ 
+                    stroke: '#94a3b8',
+                    strokeWidth: 2
+                });
+                
+                // 恢复原始标签文本
+                const connectionLabel = connection.getOverlay("label");
+                if (connectionLabel) {
+                    const originalLabel = connectionLabel.getLabel().replace(" (点击删除)", "");
+                    connectionLabel.setLabel(originalLabel);
+                }
+            });
+            
+            // 为所有连接添加右键菜单
+            jsPlumbInstance.bind("contextmenu", function(connection, originalEvent) {
+                // 阻止默认右键菜单
+                originalEvent.preventDefault();
+                originalEvent.stopPropagation();
+                
+                // 获取连接信息
+                const connectionLabel = connection.getOverlay("label");
+                const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                const sourceNode = connection.source;
+                const targetNode = connection.target;
+                
+                // 创建右键菜单
+                const contextMenu = document.createElement('div');
+                contextMenu.className = 'fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1';
+                contextMenu.style.left = originalEvent.pageX + 'px';
+                contextMenu.style.top = originalEvent.pageY + 'px';
+                
+                contextMenu.innerHTML = `
+                    <div class="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
+                        连接线操作: ${labelText}
+                    </div>
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" onclick="deleteConnection(${connection.id}, true)">
+                        <i class="fa fa-trash mr-2 text-red-500"></i>
+                        删除连接线
+                    </button>
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" onclick="showConnectionInfo(${connection.id})">
+                        <i class="fa fa-info-circle mr-2 text-blue-500"></i>
+                        连接信息
+                    </button>
+                    <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" onclick="editConnectionLabel(${connection.id})">
+                        <i class="fa fa-edit mr-2 text-green-500"></i>
+                        编辑标签
+                    </button>
+                `;
+                
+                document.body.appendChild(contextMenu);
+                
+                // 点击其他地方关闭菜单
+                const closeMenu = function() {
+                    if (document.body.contains(contextMenu)) {
+                        document.body.removeChild(contextMenu);
+                    }
+                    document.removeEventListener('click', closeMenu);
+                    document.removeEventListener('contextmenu', closeMenu);
+                };
+                
+                document.addEventListener('click', closeMenu);
+                document.addEventListener('contextmenu', closeMenu);
+            });
+        }
+
+        // 渲染思维导图
+        function renderMindMap(keyword) {
+            const container = document.getElementById('mindMapContainer');
+            container.innerHTML = '';
+
+            // 创建画布内容
+            const content = document.createElement('div');
+            content.className = 'mindmap-content';
+            container.appendChild(content);
+
+            // 重置jsPlumb实例并设置容器
+            jsPlumbInstance.reset();
+            jsPlumbInstance.setContainer(container);
+            
+            // 重新绑定连接线事件（因为reset会清除所有事件）
+            bindConnectionEvents();
+
+            // 获取容器中心点
+            const containerRect = container.getBoundingClientRect();
+            const centerX = containerRect.width / 2;
+            const centerY = containerRect.height / 2;
+
+            // 创建中心节点
+            const centerNode = document.createElement('div');
+            centerNode.className = 'mindmap-node node-question';
+            centerNode.dataset.id = 'center-node';
+            centerNode.dataset.level = '0';
+            centerNode.style.position = 'absolute';
+            centerNode.style.left = `${LayoutUtils.snapToGrid(centerX - 90)}px`; // 90是节点宽度的一半
+            centerNode.style.top = `${LayoutUtils.snapToGrid(centerY - 50)}px`; // 50是节点高度的一半
+            centerNode.innerHTML = `
+                <div class="node-header">
+                    <span class="node-type-badge">question</span>
+                </div>
+                <div class="node-content">
+                    <div class="node-item active">
+                        <i class="fa fa-plus"></i>
+                        <span>AI拓展</span>
+                    </div>
+                </div>
+                <div class="node-actions">
+                    <button class="node-action-btn" onclick="expandNode(this)">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    <button class="node-action-btn" onclick="deleteNode(this)">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(centerNode);
+
+            // 创建关键词节点（包含所有关键词）
+            const keywordNode = document.createElement('div');
+            keywordNode.className = 'mindmap-node node-keyword';
+            keywordNode.dataset.id = 'keyword-node';
+            keywordNode.dataset.level = '1';
+            keywordNode.style.position = 'absolute';
+            
+            // 计算位置（在中心节点右侧）
+            const position = LayoutUtils.getRadialPosition(0, 1, centerX + 200, centerY);
+            keywordNode.style.left = `${position.x}px`;
+            keywordNode.style.top = `${position.y}px`;
+
+            // 解析关键词
+            const keywords = JSON.parse(keyword.keywords);
+            
+            keywordNode.innerHTML = `
+                <div class="node-header">
+                    <div class="node-title">${keyword.prompt}</div>
+                </div>
+                <div class="node-content">
+                    ${keywords.map(kw => `
+                        <div class="node-item keyword-item" data-keyword="${kw}">
+                            <i class="fa fa-plus-circle" onclick="addSubNode(this)"></i>
+                            <span>${kw}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="node-actions">
+                    <button onclick="editNode(this)">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    <button onclick="deleteNode(this)">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(keywordNode);
+
+            // 设置节点可拖拽
+            jsPlumbInstance.draggable(keywordNode, {
+                grid: [LayoutUtils.GRID_SIZE, LayoutUtils.GRID_SIZE],
+                containment: false, // 移除容器限制
+                start: function() {
+                    keywordNode.classList.add('dragging');
+                    showAlignmentGuides(keywordNode);
+                },
+                drag: function() {
+                    updateAlignmentGuides(keywordNode);
+                },
+                stop: function() {
+                    keywordNode.classList.remove('dragging');
+                    hideAlignmentGuides();
+                    // 减少强制吸附，只在必要时进行
+                    const rect = keywordNode.getBoundingClientRect();
+                    const container = document.getElementById('mindMapContainer');
+                    const containerRect = container.getBoundingClientRect();
+                    const relativeX = rect.left - containerRect.left;
+                    const relativeY = rect.top - containerRect.top;
+                    
+                    // 只有在明显超出边界时才调整
+                    const extendedWidth = containerRect.width * 4;
+                    const extendedHeight = containerRect.height * 4;
+                    const offsetX = containerRect.width * 1.5;
+                    const offsetY = containerRect.height * 1.5;
+                    
+                    if (relativeX < -offsetX || relativeX + rect.width > extendedWidth - offsetX ||
+                        relativeY < -offsetY || relativeY + rect.height > extendedHeight - offsetY) {
+                        snapToNearestPosition(keywordNode);
+                    }
+                    jsPlumbInstance.repaintEverything();
+                    adjustCanvasSize(); // 调整画布大小
+                }
+            });
+
+            // 对中心节点也应用拖拽功能
+            jsPlumbInstance.draggable(centerNode, {
+                grid: [LayoutUtils.GRID_SIZE, LayoutUtils.GRID_SIZE],
+                containment: false, // 移除容器限制
+                start: function() {
+                    centerNode.classList.add('dragging');
+                    showAlignmentGuides(centerNode);
+                },
+                drag: function() {
+                    updateAlignmentGuides(centerNode);
+                },
+                stop: function() {
+                    centerNode.classList.remove('dragging');
+                    hideAlignmentGuides();
+                    // 减少强制吸附，只在必要时进行
+                    const rect = centerNode.getBoundingClientRect();
+                    const container = document.getElementById('mindMapContainer');
+                    const containerRect = container.getBoundingClientRect();
+                    const relativeX = rect.left - containerRect.left;
+                    const relativeY = rect.top - containerRect.top;
+                    
+                    // 只有在明显超出边界时才调整
+                    const extendedWidth = containerRect.width * 4;
+                    const extendedHeight = containerRect.height * 4;
+                    const offsetX = containerRect.width * 1.5;
+                    const offsetY = containerRect.height * 1.5;
+                    
+                    if (relativeX < -offsetX || relativeX + rect.width > extendedWidth - offsetX ||
+                        relativeY < -offsetY || relativeY + rect.height > extendedHeight - offsetY) {
+                        snapToNearestPosition(centerNode);
+                    }
+                    jsPlumbInstance.repaintEverything();
+                    adjustCanvasSize(); // 调整画布大小
+                }
+            });
+
+            // 创建连接
+            setTimeout(() => {
+                jsPlumbInstance.connect({
+                    source: centerNode,
+                    target: keywordNode,
+                    anchors: [
+                        "AutoDefault",
+                        "AutoDefault"
+                    ],
+                    connector: ["Flowchart", { 
+                        stub: [30, 30],
+                        gap: 10,
+                        cornerRadius: 5,
+                        alwaysRespectStubs: true
+                    }],
+                    paintStyle: { 
+                        stroke: '#94a3b8',
+                        strokeWidth: 2
+                    },
+                    overlays: [
+                        ["Label", {
+                            id: `label-${Date.now()}`,
+                            cssClass: "connection-label",
+                            label: "AI生成"
+                        }]
+                    ]
+                });
+            }, 100);
+
+            // 添加对齐参考线容器
+            if (!document.getElementById('alignment-guides')) {
+                const guidesContainer = document.createElement('div');
+                guidesContainer.id = 'alignment-guides';
+                guidesContainer.style.position = 'absolute';
+                guidesContainer.style.pointerEvents = 'none';
+                guidesContainer.style.zIndex = '1000';
+                container.appendChild(guidesContainer);
+            }
+
+            jsPlumbInstance.repaintEverything();
+            
+            // 调整画布大小以适应初始节点
+            setTimeout(() => {
+                adjustCanvasSize();
+                // 为初始节点添加文字编辑功能
+                addTextEditingToNode(centerNode);
+                addTextEditingToNode(keywordNode);
+            }, 300);
+        }
+
+        // 显示对齐参考线
+        function showAlignmentGuides(node) {
+            const guidesContainer = document.getElementById('alignment-guides');
+            guidesContainer.innerHTML = `
+                <div class="guide horizontal" style="display: none; position: absolute; height: 1px; background: #4F46E5; width: 100%;"></div>
+                <div class="guide vertical" style="display: none; position: absolute; width: 1px; background: #4F46E5; height: 100%;"></div>
+            `;
+        }
+
+        // 更新对齐参考线位置
+        function updateAlignmentGuides(node) {
+            const nodeRect = node.getBoundingClientRect();
+            const container = document.getElementById('mindMapContainer');
+            const containerRect = container.getBoundingClientRect();
+            const guides = document.getElementById('alignment-guides');
+            const horizontalGuide = guides.querySelector('.guide.horizontal');
+            const verticalGuide = guides.querySelector('.guide.vertical');
+
+            // 获取所有其他节点
+            const otherNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                .filter(n => n !== node);
+
+            // 检查水平对齐
+            let minVerticalDist = 10; // 对齐阈值
+            otherNodes.forEach(otherNode => {
+                const otherRect = otherNode.getBoundingClientRect();
+                
+                // 检查中心线对齐
+                const verticalDist = Math.abs((nodeRect.top + nodeRect.height/2) - 
+                                           (otherRect.top + otherRect.height/2));
+                if (verticalDist < minVerticalDist) {
+                    horizontalGuide.style.display = 'block';
+                    horizontalGuide.style.top = `${nodeRect.top + nodeRect.height/2 - containerRect.top}px`;
+                }
+            });
+
+            // 检查垂直对齐
+            let minHorizontalDist = 10; // 对齐阈值
+            otherNodes.forEach(otherNode => {
+                const otherRect = otherNode.getBoundingClientRect();
+                
+                // 检查中心线对齐
+                const horizontalDist = Math.abs((nodeRect.left + nodeRect.width/2) - 
+                                             (otherRect.left + otherRect.width/2));
+                if (horizontalDist < minHorizontalDist) {
+                    verticalGuide.style.display = 'block';
+                    verticalGuide.style.left = `${nodeRect.left + nodeRect.width/2 - containerRect.left}px`;
+                }
+            });
+        }
+
+        // 隐藏对齐参考线
+        function hideAlignmentGuides() {
+            const guides = document.getElementById('alignment-guides');
+            if (guides) {
+                guides.innerHTML = '';
+            }
+        }
+
+        // 将节点吸附到最近的网格位置
+        function snapToNearestPosition(node) {
+            const rect = node.getBoundingClientRect();
+            const container = document.getElementById('mindMapContainer');
+            const containerRect = container.getBoundingClientRect();
+
+            // 获取相对于容器的位置
+            const relativeX = rect.left - containerRect.left;
+            const relativeY = rect.top - containerRect.top;
+
+            // 扩展边界，允许节点放置在更大的范围内
+            const extendedWidth = containerRect.width * 4;
+            const extendedHeight = containerRect.height * 4;
+            const offsetX = containerRect.width * 1.5;
+            const offsetY = containerRect.height * 1.5;
+
+            // 检查是否在合理范围内，如果不在才进行调整
+            const isInReasonableRange = relativeX >= -offsetX && 
+                                       relativeX + rect.width <= extendedWidth - offsetX &&
+                                       relativeY >= -offsetY && 
+                                       relativeY + rect.height <= extendedHeight - offsetY;
+
+            let finalX = relativeX;
+            let finalY = relativeY;
+
+            // 只有在超出边界时才强制调整
+            if (!isInReasonableRange) {
+                finalX = Math.max(-offsetX, Math.min(extendedWidth - offsetX - rect.width, relativeX));
+                finalY = Math.max(-offsetY, Math.min(extendedHeight - offsetY - rect.height, relativeY));
+            }
+
+            // 吸附到网格
+            const snappedX = LayoutUtils.snapToGrid(finalX);
+            const snappedY = LayoutUtils.snapToGrid(finalY);
+
+            // 应用新位置
+            node.style.left = `${snappedX}px`;
+            node.style.top = `${snappedY}px`;
+        }
+
+        // 添加子节点时的连接线处理
+        function addSubNode(button) {
+            const item = button.closest('.node-item');
+            const keyword = item.dataset.keyword;
+            const parentNode = button.closest('.mindmap-node');
+            const container = document.getElementById('mindMapContainer');
+            
+            // 获取父节点和容器信息
+            const parentRect = parentNode.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const parentLevel = parseInt(parentNode.dataset.level) || 0;
+            const newLevel = parentLevel + 1;
+            
+            // 获取所有现有节点用于碰撞检测
+            const existingNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                .map(n => {
+                    const rect = n.getBoundingClientRect();
+                    return {
+                        left: rect.left - containerRect.left,
+                        top: rect.top - containerRect.top,
+                        width: rect.width,
+                        height: rect.height
+                    };
+                });
+            
+            // 创建子节点
+            const subNode = document.createElement('div');
+            subNode.className = 'mindmap-node node-text';
+            subNode.dataset.id = `sub-node-${Date.now()}`;
+            subNode.dataset.level = newLevel;
+            subNode.style.position = 'absolute';
+            
+            // 设置节点内容
+            subNode.innerHTML = `
+                <div class="node-header">
+                    <span class="node-type-badge">sub-node</span>
+                </div>
+                <div class="node-content">
+                    <div class="node-item">
+                        <i class="fa fa-plus"></i>
+                        <span>${keyword}拓展</span>
+                    </div>
+                </div>
+                <div class="node-actions">
+                    <button class="node-action-btn" onclick="editNode(this)">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    <button class="node-action-btn" onclick="deleteNode(this)">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            // 临时添加节点以获取其尺寸
+            subNode.style.visibility = 'hidden';
+            container.appendChild(subNode);
+            const subNodeRect = subNode.getBoundingClientRect();
+            const nodeWidth = subNodeRect.width;
+            const nodeHeight = subNodeRect.height;
+            
+            // 计算树状布局位置
+            const parentCenterX = parentRect.left - containerRect.left + parentRect.width / 2;
+            const parentCenterY = parentRect.top - containerRect.top + parentRect.height / 2;
+            
+            // 获取同级节点数量（用于计算位置）
+            const siblingNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                .filter(n => n !== subNode && parseInt(n.dataset.level) === newLevel);
+            const siblingIndex = siblingNodes.length;
+            
+            // 如果是question节点（level 0）生成子节点，使用更简单的布局
+            let position;
+            if (parentLevel === 0) {
+                // 为question节点生成子节点时，使用更小的间距
+                const closeSpacing = LayoutUtils.MIN_NODE_DISTANCE * 0.4; // 更小的间距
+                
+                // 根据子节点数量决定位置
+                if (siblingIndex === 0) {
+                    // 第一个子节点放在右侧
+                    position = {
+                        x: LayoutUtils.snapToGrid(parentCenterX + closeSpacing),
+                        y: LayoutUtils.snapToGrid(parentCenterY)
+                    };
+                } else if (siblingIndex === 1) {
+                    // 第二个子节点放在左侧
+                    position = {
+                        x: LayoutUtils.snapToGrid(parentCenterX - closeSpacing),
+                        y: LayoutUtils.snapToGrid(parentCenterY)
+                    };
+                } else {
+                    // 更多子节点使用垂直布局
+                    const verticalSpacing = LayoutUtils.MIN_NODE_DISTANCE * 0.6;
+                    const row = Math.floor(siblingIndex / 2);
+                    const isRight = siblingIndex % 2 === 0;
+                    
+                    position = {
+                        x: LayoutUtils.snapToGrid(parentCenterX + (isRight ? closeSpacing : -closeSpacing)),
+                        y: LayoutUtils.snapToGrid(parentCenterY + (row * verticalSpacing))
+                    };
+                }
+            } else {
+                // 其他节点使用原有的树状布局
+                position = LayoutUtils.getTreePosition(
+                    { left: parentCenterX, top: parentCenterY, width: parentRect.width, height: parentRect.height },
+                    siblingIndex, siblingNodes.length + 1, newLevel, existingNodes, parentNode.dataset.id
+                );
+            }
+            
+            // 检查碰撞并调整位置
+            const newNodeRect = {
+                left: position.x,
+                top: position.y,
+                width: nodeWidth,
+                height: nodeHeight
+            };
+            
+            const adjustedPosition = LayoutUtils.avoidCollision(newNodeRect, existingNodes, {
+                width: containerRect.width,
+                height: containerRect.height
+            });
+            
+            // 应用最终位置
+            subNode.style.left = `${adjustedPosition.x}px`;
+            subNode.style.top = `${adjustedPosition.y}px`;
+            subNode.style.visibility = 'visible';
+            
+            // 设置子节点可拖拽
+            jsPlumbInstance.draggable(subNode, {
+                grid: [LayoutUtils.GRID_SIZE, LayoutUtils.GRID_SIZE],
+                containment: false, // 移除容器限制
+                start: function() {
+                    subNode.classList.add('dragging');
+                    showAlignmentGuides(subNode);
+                },
+                drag: function() {
+                    updateAlignmentGuides(subNode);
+                    // 使用 requestAnimationFrame 优化重绘
+                    requestAnimationFrame(() => {
+                        jsPlumbInstance.revalidate(subNode);
+                    });
+                },
+                stop: function() {
+                    subNode.classList.remove('dragging');
+                    hideAlignmentGuides();
+                    // 减少强制吸附，只在必要时进行
+                    const rect = subNode.getBoundingClientRect();
+                    const container = document.getElementById('mindMapContainer');
+                    const containerRect = container.getBoundingClientRect();
+                    const relativeX = rect.left - containerRect.left;
+                    const relativeY = rect.top - containerRect.top;
+                    
+                    // 只有在明显超出边界时才调整
+                    const extendedWidth = containerRect.width * 4;
+                    const extendedHeight = containerRect.height * 4;
+                    const offsetX = containerRect.width * 1.5;
+                    const offsetY = containerRect.height * 1.5;
+                    
+                    if (relativeX < -offsetX || relativeX + rect.width > extendedWidth - offsetX ||
+                        relativeY < -offsetY || relativeY + rect.height > extendedHeight - offsetY) {
+                        snapToNearestPosition(subNode);
+                    }
+                    jsPlumbInstance.repaintEverything();
+                    adjustCanvasSize(); // 调整画布大小
+                }
+            });
+            
+            // 连接子节点到父节点
+            setTimeout(() => {
+                jsPlumbInstance.connect({
+                    source: parentNode,
+                    target: subNode,
+                    anchors: [
+                        "AutoDefault",
+                        "AutoDefault"
+                    ],
+                    connector: ["Flowchart", { 
+                        stub: [30, 30],
+                        gap: 10,
+                        cornerRadius: 5,
+                        alwaysRespectStubs: true
+                    }],
+                    paintStyle: { 
+                        stroke: '#94a3b8',
+                        strokeWidth: 2
+                    },
+                    overlays: [
+                        ["Label", {
+                            id: "label-" + Date.now(),
+                            cssClass: "connection-label",
+                            label: "子节点"
+                        }]
+                    ]
+                });
+                jsPlumbInstance.repaintEverything();
+                adjustCanvasSize(); // 调整画布大小
+                
+                // 为子节点添加文字编辑功能
+                addTextEditingToNode(subNode);
+            }, 100);
+        }
+
+        // 创建节点间连接的通用函数
+        function createConnection(source, target, labelText) {
+            // 防止自连接
+            if (source === target) {
+                return null;
+            }
+
+            // 计算源节点和目标节点的位置关系
+            const sourceRect = source.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            
+            // 根据节点位置关系选择合适的锚点
+            let sourceAnchor, targetAnchor;
+            
+            if (targetRect.left > sourceRect.right) {
+                // 目标在源的右边
+                sourceAnchor = [1, 0.5, 1, 0];
+                targetAnchor = [0, 0.5, -1, 0];
+            } else if (targetRect.right < sourceRect.left) {
+                // 目标在源的左边
+                sourceAnchor = [0, 0.5, -1, 0];
+                targetAnchor = [1, 0.5, 1, 0];
+            } else if (targetRect.top > sourceRect.bottom) {
+                // 目标在源的下方
+                sourceAnchor = [0.5, 1, 0, 1];
+                targetAnchor = [0.5, 0, 0, -1];
+            } else {
+                // 目标在源的上方
+                sourceAnchor = [0.5, 0, 0, -1];
+                targetAnchor = [0.5, 1, 0, 1];
+            }
+
+            return jsPlumbInstance.connect({
+                source: source,
+                target: target,
+                anchors: [sourceAnchor, targetAnchor],
+                overlays: [
+                    ["Label", {
+                        id: "label-" + Date.now(),
+                        cssClass: "connection-label",
+                        label: labelText
+                    }]
+                ]
+            });
+        }
+
+        // 拓展节点
+        async function expandNode(button) {
+            const node = button.closest('.mindmap-node');
+            const content = node.querySelector('.node-content .node-item').textContent.trim();
+            
+            // 显示加载状态
+            button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+            button.disabled = true;
+
+            try {
+                // 模拟API调用生成关键词
+                const result = await generateKeywords(content);
+                const keywords = JSON.parse(result.keywords);
+                
+                // 获取容器和父节点信息
+                const container = document.getElementById('mindMapContainer');
+                const parentRect = node.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const parentLevel = parseInt(node.dataset.level) || 0;
+                const newLevel = parentLevel + 1;
+                
+                // 获取所有现有节点用于碰撞检测
+                const existingNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                    .map(n => {
+                        const rect = n.getBoundingClientRect();
+                        return {
+                            left: rect.left - containerRect.left,
+                            top: rect.top - containerRect.top,
+                            width: rect.width,
+                            height: rect.height
+                        };
+                    });
+
+                // 创建关键词节点（包含所有关键词）
+                const keywordNode = document.createElement('div');
+                keywordNode.className = 'mindmap-node node-keyword';
+                keywordNode.dataset.id = `keyword-${Date.now()}`;
+                keywordNode.dataset.level = newLevel;
+                keywordNode.style.position = 'absolute';
+
+                // 计算树状布局位置
+                const parentCenterX = parentRect.left - containerRect.left + parentRect.width / 2;
+                const parentCenterY = parentRect.top - containerRect.top + parentRect.height / 2;
+                
+                // 获取同级节点数量（用于计算位置）
+                const siblingNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                    .filter(n => parseInt(n.dataset.level) === newLevel);
+                const siblingIndex = siblingNodes.length;
+                
+                const position = LayoutUtils.getTreePosition(
+                    { left: parentCenterX, top: parentCenterY, width: parentRect.width, height: parentRect.height },
+                    siblingIndex, siblingNodes.length + 1, newLevel, existingNodes, node.dataset.id
+                );
+                
+                // 应用位置
+                keywordNode.style.left = `${position.x}px`;
+                keywordNode.style.top = `${position.y}px`;
+
+                // 设置节点内容（包含所有关键词）
+                keywordNode.innerHTML = `
+                    <div class="node-header">
+                        <div class="node-title">${result.prompt}</div>
+                    </div>
+                    <div class="node-content">
+                        ${keywords.map(kw => `
+                            <div class="node-item keyword-item" data-keyword="${kw}">
+                                <i class="fa fa-plus-circle" onclick="addSubNode(this)"></i>
+                                <span>${kw}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="node-actions">
+                        <button onclick="editNode(this)">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                        <button onclick="deleteNode(this)">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+
+                // 检查碰撞并调整位置
+                const newNodeRect = {
+                    left: position.x,
+                    top: position.y,
+                    width: 240, // 估计的节点宽度
+                    height: 200  // 估计的节点高度
+                };
+                
+                const adjustedPosition = LayoutUtils.avoidCollision(newNodeRect, existingNodes, {
+                    width: containerRect.width,
+                    height: containerRect.height
+                });
+                
+                keywordNode.style.left = `${adjustedPosition.x}px`;
+                keywordNode.style.top = `${adjustedPosition.y}px`;
+
+                // 添加节点到容器
+                container.appendChild(keywordNode);
+
+                // 设置节点可拖拽
+                jsPlumbInstance.draggable(keywordNode, {
+                    grid: [LayoutUtils.GRID_SIZE, LayoutUtils.GRID_SIZE],
+                    containment: false, // 移除容器限制
+                    start: function() {
+                        keywordNode.classList.add('dragging');
+                        showAlignmentGuides(keywordNode);
+                    },
+                    drag: function() {
+                        updateAlignmentGuides(keywordNode);
+                        // 使用 requestAnimationFrame 优化重绘
+                        requestAnimationFrame(() => {
+                            jsPlumbInstance.revalidate(keywordNode);
+                        });
+                    },
+                    stop: function() {
+                        keywordNode.classList.remove('dragging');
+                        hideAlignmentGuides();
+                        // 减少强制吸附，只在必要时进行
+                        const rect = keywordNode.getBoundingClientRect();
+                        const container = document.getElementById('mindMapContainer');
+                        const containerRect = container.getBoundingClientRect();
+                        const relativeX = rect.left - containerRect.left;
+                        const relativeY = rect.top - containerRect.top;
+                        
+                        // 只有在明显超出边界时才调整
+                        const extendedWidth = containerRect.width * 4;
+                        const extendedHeight = containerRect.height * 4;
+                        const offsetX = containerRect.width * 1.5;
+                        const offsetY = containerRect.height * 1.5;
+                        
+                        if (relativeX < -offsetX || relativeX + rect.width > extendedWidth - offsetX ||
+                            relativeY < -offsetY || relativeY + rect.height > extendedHeight - offsetY) {
+                            snapToNearestPosition(keywordNode);
+                        }
+                        jsPlumbInstance.repaintEverything();
+                        adjustCanvasSize(); // 调整画布大小
+                    }
+                });
+
+                // 创建连接
+                setTimeout(() => {
+                    jsPlumbInstance.connect({
+                        source: node,
+                        target: keywordNode,
+                        anchors: [
+                            "AutoDefault",
+                            "AutoDefault"
+                        ],
+                        connector: ["Flowchart", { 
+                            stub: [30, 30],
+                            gap: 10,
+                            cornerRadius: 5,
+                            alwaysRespectStubs: true
+                        }],
+                        paintStyle: { 
+                            stroke: '#94a3b8',
+                            strokeWidth: 2
+                        },
+                        overlays: [
+                            ["Label", {
+                                id: `label-${Date.now()}`,
+                                cssClass: "connection-label",
+                                label: "AI拓展"
+                            }]
+                        ]
+                    });
+                }, 100);
+
+                // 恢复按钮状态
+                button.innerHTML = '<i class="fa fa-pencil"></i>';
+                button.disabled = false;
+
+                // 最终重绘
+                setTimeout(() => {
+                    jsPlumbInstance.repaintEverything();
+                    adjustCanvasSize(); // 调整画布大小
+                    
+                    // 为新生成的关键词节点添加文字编辑功能
+                    addTextEditingToNode(keywordNode);
+                }, 200);
+
+            } catch (error) {
+                console.error('生成关键词失败:', error);
+                button.innerHTML = '<i class="fa fa-pencil"></i>';
+                button.disabled = false;
+                alert('生成关键词失败，请重试');
+            }
+        }
+
+        // 删除节点
+        function deleteNode(button) {
+            const node = button.closest('.mindmap-node');
+            const nodeId = node.dataset.id;
+            
+            // 确认是否删除
+            if (!confirm('确定要删除此节点及其所有子节点吗？\n\n删除节点会同时删除所有相关的连接线。')) {
+                return;
+            }
+
+            // 递归删除节点及其子节点
+            function deleteNodeAndChildren(currentNode) {
+                // 获取所有以当前节点为源的连接
+                const connections = jsPlumbInstance.getConnections({
+                    source: currentNode
+                });
+                
+                // 递归删除每个子节点
+                connections.forEach(connection => {
+                    const targetNode = connection.target;
+                    deleteNodeAndChildren(targetNode);
+                });
+                
+                // 删除当前节点的所有连接（使用新的删除函数）
+                const deletedConnections = deleteAllConnectionsForNode(currentNode);
+                if (deletedConnections > 0) {
+                    console.log(`删除了 ${deletedConnections} 个连接线`);
+                }
+                
+                // 删除当前节点
+                currentNode.remove();
+            }
+            
+            // 开始删除操作
+            deleteNodeAndChildren(node);
+            
+            // 显示删除成功提示
+            showNotification('节点删除成功', 'success');
+        }
+
+        // 编辑节点
+        async function editNode(button) {
+            const node = button.closest('.mindmap-node');
+            const content = node.querySelector('.node-content .node-item').textContent.trim();
+            
+            // 显示加载状态
+            button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+            button.disabled = true;
+
+            try {
+                // 模拟API调用生成关键词
+                const result = await generateKeywords(content);
+                const keywords = JSON.parse(result.keywords);
+                
+                // 获取容器和父节点信息
+                const container = document.getElementById('mindMapContainer');
+                const parentRect = node.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const parentLevel = parseInt(node.dataset.level) || 0;
+                const newLevel = parentLevel + 1;
+                
+                // 获取所有现有节点用于碰撞检测
+                const existingNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                    .map(n => {
+                        const rect = n.getBoundingClientRect();
+                        return {
+                            left: rect.left - containerRect.left,
+                            top: rect.top - containerRect.top,
+                            width: rect.width,
+                            height: rect.height
+                        };
+                    });
+
+                // 创建关键词节点（包含所有关键词）
+                const keywordNode = document.createElement('div');
+                keywordNode.className = 'mindmap-node node-keyword';
+                keywordNode.dataset.id = `keyword-${Date.now()}`;
+                keywordNode.dataset.level = newLevel;
+                keywordNode.style.position = 'absolute';
+
+                // 计算树状布局位置
+                const parentCenterX = parentRect.left - containerRect.left + parentRect.width / 2;
+                const parentCenterY = parentRect.top - containerRect.top + parentRect.height / 2;
+                
+                // 获取同级节点数量（用于计算位置）
+                const siblingNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                    .filter(n => parseInt(n.dataset.level) === newLevel);
+                const siblingIndex = siblingNodes.length;
+                
+                const position = LayoutUtils.getTreePosition(
+                    { left: parentCenterX, top: parentCenterY, width: parentRect.width, height: parentRect.height },
+                    siblingIndex, siblingNodes.length + 1, newLevel, existingNodes, node.dataset.id
+                );
+                
+                // 应用位置
+                keywordNode.style.left = `${position.x}px`;
+                keywordNode.style.top = `${position.y}px`;
+
+                // 设置节点内容（包含所有关键词）
+                keywordNode.innerHTML = `
+                    <div class="node-header">
+                        <div class="node-title">${result.prompt}</div>
+                    </div>
+                    <div class="node-content">
+                        ${keywords.map(kw => `
+                            <div class="node-item keyword-item" data-keyword="${kw}">
+                                <i class="fa fa-plus-circle" onclick="addSubNode(this)"></i>
+                                <span>${kw}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="node-actions">
+                        <button onclick="editNode(this)">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                        <button onclick="deleteNode(this)">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+
+                // 检查碰撞并调整位置
+                const newNodeRect = {
+                    left: position.x,
+                    top: position.y,
+                    width: 240, // 估计的节点宽度
+                    height: 200  // 估计的节点高度
+                };
+                
+                const adjustedPosition = LayoutUtils.avoidCollision(newNodeRect, existingNodes, {
+                    width: containerRect.width,
+                    height: containerRect.height
+                });
+                
+                keywordNode.style.left = `${adjustedPosition.x}px`;
+                keywordNode.style.top = `${adjustedPosition.y}px`;
+
+                // 添加节点到容器
+                container.appendChild(keywordNode);
+
+                // 设置节点可拖拽
+                jsPlumbInstance.draggable(keywordNode, {
+                    grid: [LayoutUtils.GRID_SIZE, LayoutUtils.GRID_SIZE],
+                    containment: false, // 移除容器限制
+                    start: function() {
+                        keywordNode.classList.add('dragging');
+                        showAlignmentGuides(keywordNode);
+                    },
+                    drag: function() {
+                        updateAlignmentGuides(keywordNode);
+                        // 使用 requestAnimationFrame 优化重绘
+                        requestAnimationFrame(() => {
+                            jsPlumbInstance.revalidate(keywordNode);
+                        });
+                    },
+                    stop: function() {
+                        keywordNode.classList.remove('dragging');
+                        hideAlignmentGuides();
+                        // 减少强制吸附，只在必要时进行
+                        const rect = keywordNode.getBoundingClientRect();
+                        const container = document.getElementById('mindMapContainer');
+                        const containerRect = container.getBoundingClientRect();
+                        const relativeX = rect.left - containerRect.left;
+                        const relativeY = rect.top - containerRect.top;
+                        
+                        // 只有在明显超出边界时才调整
+                        const extendedWidth = containerRect.width * 4;
+                        const extendedHeight = containerRect.height * 4;
+                        const offsetX = containerRect.width * 1.5;
+                        const offsetY = containerRect.height * 1.5;
+                        
+                        if (relativeX < -offsetX || relativeX + rect.width > extendedWidth - offsetX ||
+                            relativeY < -offsetY || relativeY + rect.height > extendedHeight - offsetY) {
+                            snapToNearestPosition(keywordNode);
+                        }
+                        jsPlumbInstance.repaintEverything();
+                        adjustCanvasSize(); // 调整画布大小
+                    }
+                });
+
+                // 创建连接
+                setTimeout(() => {
+                    jsPlumbInstance.connect({
+                        source: node,
+                        target: keywordNode,
+                        anchors: [
+                            "AutoDefault",
+                            "AutoDefault"
+                        ],
+                        connector: ["Flowchart", { 
+                            stub: [30, 30],
+                            gap: 10,
+                            cornerRadius: 5,
+                            alwaysRespectStubs: true
+                        }],
+                        paintStyle: { 
+                            stroke: '#94a3b8',
+                            strokeWidth: 2
+                        },
+                        overlays: [
+                            ["Label", {
+                                id: `label-${Date.now()}`,
+                                cssClass: "connection-label",
+                                label: "AI拓展"
+                            }]
+                        ]
+                    });
+                }, 100);
+
+                // 恢复按钮状态
+                button.innerHTML = '<i class="fa fa-pencil"></i>';
+                button.disabled = false;
+
+                // 最终重绘
+                setTimeout(() => {
+                    jsPlumbInstance.repaintEverything();
+                    adjustCanvasSize(); // 调整画布大小
+                    
+                    // 为新生成的关键词节点添加文字编辑功能
+                    addTextEditingToNode(keywordNode);
+                }, 200);
+
+            } catch (error) {
+                console.error('生成关键词失败:', error);
+                button.innerHTML = '<i class="fa fa-pencil"></i>';
+                button.disabled = false;
+                alert('生成关键词失败，请重试');
+            }
+        }
+
+        // 保存思维导图
+        function saveMindMap() {
+            alert('思维导图保存功能将在未来版本中实现');
+        }
+
+        // 显示历史记录
+        async function showHistory() {
+            try {
+                const history = await getKeywordHistory();
+                const historyContainer = document.createElement('div');
+                historyContainer.className = 'fixed right-4 top-20 w-80 bg-white rounded-xl shadow-lg p-4 max-h-[calc(100vh-8rem)] overflow-y-auto';
+                historyContainer.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-4">历史记录</h3>
+                    <div class="space-y-3">
+                        ${history.map(item => `
+                            <div class="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" 
+                                 onclick="loadKeyword(${item.id})">
+                                <div class="font-medium">${item.title}</div>
+                                <div class="text-sm text-gray-600">${item.prompt}</div>
+                                <div class="text-xs text-gray-400 mt-1">${new Date(item.id).toLocaleString()}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                // 检查是否已存在历史记录面板，若存在则替换
+                const existingPanel = document.querySelector('.fixed.right-4.top-20.w-80');
+                if (existingPanel) {
+                    existingPanel.replaceWith(historyContainer);
+                } else {
+                    document.body.appendChild(historyContainer);
+                }
+            } catch (error) {
+                console.error('显示历史记录失败:', error);
+            }
+        }
+
+        // 加载单个关键词记录
+        async function loadKeyword(id) {
+            try {
+                const keyword = await getKeywordById(id);
+                if (keyword) {
+                    document.getElementById('resultPage').classList.remove('hidden');
+                    renderMindMap(keyword);
+                } else {
+                    alert('记录不存在或已被删除');
+                }
+            } catch (error) {
+                console.error('加载记录失败:', error);
+                alert('加载记录失败，请稍后重试');
+            }
+        }
+
+        // 表单验证函数
+        function validateLoginForm() {
+            const username = document.querySelector('#loginForm input[name="username"]').value.trim();
+            const password = document.querySelector('#loginForm input[name="password"]').value;
+            
+            let isValid = true;
+            
+            // 验证用户名
+            if (!username) {
+                document.getElementById('loginUsernameError').textContent = '请输入用户名';
+                isValid = false;
+            } else {
+                document.getElementById('loginUsernameError').textContent = '';
+            }
+            
+            // 验证密码
+            if (!password) {
+                document.getElementById('loginPasswordError').textContent = '请输入密码';
+                isValid = false;
+            } else {
+                document.getElementById('loginPasswordError').textContent = '';
+            }
+            
+            // 更新按钮状态
+            const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+            if (isValid) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400');
+                submitBtn.classList.add('bg-primary');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-400');
+                submitBtn.classList.remove('bg-primary');
+            }
+            
+            return isValid;
+        }
+
+        function validateRegisterForm() {
+            const username = document.querySelector('#registerForm input[name="username"]').value.trim();
+            const email = document.querySelector('#registerForm input[name="email"]').value.trim();
+            const password = document.querySelector('#registerForm input[name="password"]').value;
+            const confirmPassword = document.querySelector('#registerForm input[name="confirmPassword"]').value;
+            
+            let isValid = true;
+            
+            // 验证用户名
+            if (!username) {
+                document.getElementById('registerUsernameError').textContent = '请输入用户名';
+                isValid = false;
+            } else if (username.length < 3) {
+                document.getElementById('registerUsernameError').textContent = '用户名至少3个字符';
+                isValid = false;
+            } else {
+                document.getElementById('registerUsernameError').textContent = '';
+            }
+            
+            // 验证邮箱
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email) {
+                document.getElementById('registerEmailError').textContent = '请输入邮箱';
+                isValid = false;
+            } else if (!emailRegex.test(email)) {
+                document.getElementById('registerEmailError').textContent = '请输入有效的邮箱地址';
+                isValid = false;
+            } else {
+                document.getElementById('registerEmailError').textContent = '';
+            }
+            
+            // 验证密码
+            if (!password) {
+                document.getElementById('registerPasswordError').textContent = '请输入密码';
+                isValid = false;
+            } else if (password.length < 6) {
+                document.getElementById('registerPasswordError').textContent = '密码至少6个字符';
+                isValid = false;
+            } else {
+                document.getElementById('registerPasswordError').textContent = '';
+            }
+            
+            // 验证确认密码
+            if (!confirmPassword) {
+                document.getElementById('registerConfirmPasswordError').textContent = '请确认密码';
+                isValid = false;
+            } else if (confirmPassword !== password) {
+                document.getElementById('registerConfirmPasswordError').textContent = '两次输入的密码不一致';
+                isValid = false;
+            } else {
+                document.getElementById('registerConfirmPasswordError').textContent = '';
+            }
+            
+            // 更新按钮状态
+            const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+            if (isValid) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400');
+                submitBtn.classList.add('bg-primary');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-400');
+                submitBtn.classList.remove('bg-primary');
+            }
+            
+            return isValid;
+        }
+
+        // 登录函数
+        async function login(username, password) {
+            try {
+                // 模拟登录API调用
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        // 模拟登录成功
+                        const user = {
+                            id: Date.now(),
+                            username: username,
+                            token: 'fake_token_' + Date.now()
+                        };
+                        
+                        // 保存用户信息到本地存储
+                        localStorage.setItem('user', JSON.stringify(user));
+                        
+                        resolve(user);
+                    }, 800);
+                });
+            } catch (error) {
+                console.error('登录失败:', error);
+                
+                // 显示错误信息
+                if (error.response && error.response.data && error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('登录失败，请检查用户名和密码');
+                }
+                
+                throw error;
+            }
+        }
+
+        // 注册函数
+        async function register(username, email, password) {
+            try {
+                // 模拟注册API调用
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        // 模拟注册成功
+                        const user = {
+                            id: Date.now(),
+                            username: username,
+                            email: email,
+                            token: 'fake_token_' + Date.now()
+                        };
+                        
+                        // 保存用户信息到本地存储
+                        localStorage.setItem('user', JSON.stringify(user));
+                        
+                        resolve(user);
+                    }, 1000);
+                });
+            } catch (error) {
+                console.error('注册失败:', error);
+                
+                // 显示错误信息
+                if (error.response && error.response.data && error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('注册失败，请稍后重试');
+                }
+                
+                throw error;
+            }
+        }
+
+        // 事件处理
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查用户是否已登录
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                document.getElementById('userArea').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('username').textContent = currentUser.username;
+            }
+
+            // 主生成按钮点击事件
+            document.getElementById('mainGenerateBtn').addEventListener('click', async () => {
+                const prompt = document.getElementById('mainPrompt').value.trim();
+                if (!prompt) {
+                    alert('请输入关键词');
+                    return;
+                }
+
+                try {
+                    const loadingBtn = document.getElementById('mainGenerateBtn');
+                    const originalText = loadingBtn.innerHTML;
+                    loadingBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>生成中...';
+                    loadingBtn.disabled = true;
+
+                    const result = await generateKeywords(prompt);
+                    document.getElementById('resultPage').classList.remove('hidden');
+                    renderMindMap(result);
+                    await saveKeyword(result); // 新增：保存到历史记录
+                    showHistory(); // 更新历史记录
+
+                    loadingBtn.innerHTML = originalText;
+                    loadingBtn.disabled = false;
+                } catch (error) {
+                    alert(error.message);
+                    const loadingBtn = document.getElementById('mainGenerateBtn');
+                    loadingBtn.innerHTML = '<i class="fa fa-rocket mr-1"></i>生成';
+                    loadingBtn.disabled = false;
+                }
+            });
+
+            // 显示历史记录按钮点击事件
+            document.getElementById('openPanelBtn').addEventListener('click', showHistory);
+
+            // 连接管理按钮点击事件
+            document.getElementById('connectionManagerBtn').addEventListener('click', showConnectionManager);
+
+            // 返回按钮事件
+            document.getElementById('backToHomeBtn').addEventListener('click', () => {
+                document.getElementById('resultPage').classList.add('hidden');
+            });
+
+            // 登录注册相关的JavaScript代码
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const switchToRegister = document.getElementById('switchToRegister');
+            const switchToLogin = document.getElementById('switchToLogin');
+            const userArea = document.getElementById('userArea');
+            const userInfo = document.getElementById('userInfo');
+            const usernameSpan = document.getElementById('username');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // 显示登录模态框
+            loginBtn.addEventListener('click', () => {
+                loginModal.classList.remove('hidden');
+                validateLoginForm(); // 初始化验证
+            });
+
+            // 显示注册模态框
+            registerBtn.addEventListener('click', () => {
+                registerModal.classList.remove('hidden');
+                validateRegisterForm(); // 初始化验证
+            });
+
+            // 切换到注册
+            switchToRegister.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+                registerModal.classList.remove('hidden');
+                validateRegisterForm(); // 初始化验证
+            });
+
+            // 切换到登录
+            switchToLogin.addEventListener('click', () => {
+                registerModal.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+                validateLoginForm(); // 初始化验证
+            });
+
+            // 关闭模态框
+            document.querySelectorAll('.closeModal').forEach(button => {
+                button.addEventListener('click', () => {
+                    loginModal.classList.add('hidden');
+                    registerModal.classList.add('hidden');
+                });
+            });
+
+            // 登录表单输入事件 - 实时验证
+            document.querySelectorAll('#loginForm input').forEach(input => {
+                input.addEventListener('input', validateLoginForm);
+            });
+
+            // 注册表单输入事件 - 实时验证
+            document.querySelectorAll('#registerForm input').forEach(input => {
+                input.addEventListener('input', validateRegisterForm);
+            });
+
+            // 登录表单提交
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!validateLoginForm()) return;
+                
+                const username = document.querySelector('#loginForm input[name="username"]').value.trim();
+                const password = document.querySelector('#loginForm input[name="password"]').value;
+                
+                try {
+                    // 显示加载状态
+                    const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>登录中...';
+                    
+                    // 执行登录
+                    const user = await login(username, password);
+                    
+                    // 登录成功
+                    currentUser = user;
+                    userArea.classList.add('hidden');
+                    userInfo.classList.remove('hidden');
+                    usernameSpan.textContent = user.username;
+                    
+                    // 关闭模态框
+                    loginModal.classList.add('hidden');
+                    
+                    // 重置表单
+                    e.target.reset();
+                    
+                    // 恢复按钮状态
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    alert('登录成功！');
+                } catch (error) {
+                    // 恢复按钮状态
+                    const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '登录';
+                }
+            });
+
+            // 注册表单提交
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!validateRegisterForm()) return;
+                
+                const username = document.querySelector('#registerForm input[name="username"]').value.trim();
+                const email = document.querySelector('#registerForm input[name="email"]').value.trim();
+                const password = document.querySelector('#registerForm input[name="password"]').value;
+                
+                try {
+                    // 显示加载状态
+                    const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>注册中...';
+                    
+                    // 执行注册
+                    const user = await register(username, email, password);
+                    
+                    // 注册成功
+                    currentUser = user;
+                    userArea.classList.add('hidden');
+                    userInfo.classList.remove('hidden');
+                    usernameSpan.textContent = user.username;
+                    
+                    // 关闭模态框
+                    registerModal.classList.add('hidden');
+                    
+                    // 重置表单
+                    e.target.reset();
+                    
+                    // 恢复按钮状态
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    alert('注册成功！欢迎使用AI关键词生成器');
+                } catch (error) {
+                    // 恢复按钮状态
+                    const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '注册';
+                }
+            });
+
+            // 退出登录
+            logoutBtn.addEventListener('click', () => {
+                // 移除本地存储中的用户信息
+                localStorage.removeItem('user');
+                currentUser = null;
+                
+                // 更新UI
+                userInfo.classList.add('hidden');
+                userArea.classList.remove('hidden');
+                
+                alert('已成功退出登录');
+            });
+
+            // 添加画布拖拽功能
+            const container = document.getElementById('mindMapContainer');
+            
+            container.addEventListener('mousemove', (e) => {
+                if (!isDragging) {
+                    container.style.cursor = 'default';
+                    return;
+                }
+                
+                e.preventDefault();
+                const x = e.pageX - container.offsetLeft;
+                const y = e.pageY - container.offsetTop;
+                const dx = x - startX;
+                const dy = y - startY;
+
+                container.scrollLeft = scrollLeft - dx;
+                container.scrollTop = scrollTop - dy;
+            });
+
+            container.addEventListener('mousedown', (e) => {
+                if (e.target === container || e.target.classList.contains('mindmap-content')) {
+                    isDragging = true;
+                    container.classList.add('dragging');
+                    startX = e.pageX - container.offsetLeft;
+                    startY = e.pageY - container.offsetTop;
+                    scrollLeft = container.scrollLeft;
+                    scrollTop = container.scrollTop;
+                }
+            });
+
+            container.addEventListener('mouseup', () => {
+                isDragging = false;
+                container.classList.remove('dragging');
+                container.style.cursor = 'default';
+            });
+
+            container.addEventListener('mouseleave', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    container.classList.remove('dragging');
+                    container.style.cursor = 'default';
+                }
+            });
+
+            // 防止节点拖拽时触发画布拖拽
+            document.querySelectorAll('.mindmap-node').forEach(node => {
+                node.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                });
+            });
+
+            // 添加CSS样式
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .connection-label {
+                    background-color: white;
+                    padding: 2px 5px;
+                    border-radius: 10px;
+                    border: 1px solid #94a3b8;
+                    font-size: 10px;
+                    cursor: pointer;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    white-space: nowrap;
+                }
+                .jtk-connector:hover .connection-label {
+                    opacity: 1;
+                }
+                .jtk-connector {
+                    cursor: pointer;
+                }
+                .mindmap-node {
+                    z-index: 10;
+                }
+                .jtk-connector {
+                    z-index: 5;
+                }
+                .jtk-connector {
+                    transition: path 0.1s ease-out;
+                }
+                .active-connection {
+                    z-index: 1000;
+                }
+                .active-connection path {
+                    transition: all 0.1s ease-out;
+                }
+                .jtk-endpoint {
+                    transition: transform 0.1s ease-out;
+                }
+                .mindmap-node {
+                    transition: transform 0.1s ease-out;
+                }
+                
+                /* 文字编辑样式 */
+                .text-edit-input {
+                    background: rgba(255, 255, 255, 0.9) !important;
+                    border: 1px solid #4F46E5 !important;
+                    border-radius: 4px;
+                    padding: 2px 4px !important;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                
+                .text-edit-input:focus {
+                    background: white !important;
+                    border-color: #4F46E5 !important;
+                    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+                }
+                
+                /* 可编辑文字的光标样式 */
+                .node-title,
+                .keyword-item span,
+                .node-item span {
+                    cursor: text;
+                    transition: background-color 0.2s ease;
+                }
+                
+                .node-title:hover,
+                .keyword-item span:hover,
+                .node-item span:hover {
+                    background-color: rgba(79, 70, 229, 0.1);
+                    border-radius: 2px;
+                }
+                
+                /* 编辑状态样式 */
+                .editing {
+                    position: relative;
+                    z-index: 1000;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+        // 动态调整画布大小以适应节点位置
+        function adjustCanvasSize() {
+            const container = document.getElementById('mindMapContainer');
+            const nodes = container.getElementsByClassName('mindmap-node');
+            const containerRect = container.getBoundingClientRect();
+            
+            if (nodes.length === 0) return;
+            
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            
+            // 计算所有节点的边界
+            Array.from(nodes).forEach(node => {
+                const rect = node.getBoundingClientRect();
+                const relativeX = rect.left - containerRect.left;
+                const relativeY = rect.top - containerRect.top;
+                
+                minX = Math.min(minX, relativeX);
+                maxX = Math.max(maxX, relativeX + rect.width);
+                minY = Math.min(minY, relativeY);
+                maxY = Math.max(maxY, relativeY + rect.height);
+            });
+            
+            // 添加边距
+            const margin = 200;
+            minX -= margin;
+            maxX += margin;
+            minY -= margin;
+            maxY += margin;
+            
+            // 调整画布内容大小
+            const content = container.querySelector('.mindmap-content');
+            if (content) {
+                const currentWidth = Math.abs(minX) + maxX;
+                const currentHeight = Math.abs(minY) + maxY;
+                
+                // 确保最小尺寸
+                const minWidth = Math.max(currentWidth, containerRect.width * 12);
+                const minHeight = Math.max(currentHeight, containerRect.height * 12);
+                
+                content.style.minWidth = `${minWidth}px`;
+                content.style.minHeight = `${minHeight}px`;
+                content.style.left = `${minX}px`;
+                content.style.top = `${minY}px`;
+            }
+        }
+
+        // 优化拖拽时的碰撞检测
+        function optimizeDragCollision(node, newX, newY) {
+            const container = document.getElementById('mindMapContainer');
+            const containerRect = container.getBoundingClientRect();
+            const nodeRect = node.getBoundingClientRect();
+            
+            // 获取所有其他节点
+            const otherNodes = Array.from(container.getElementsByClassName('mindmap-node'))
+                .filter(n => n !== node);
+            
+            // 检查新位置是否有碰撞
+            const newRect = {
+                left: newX,
+                top: newY,
+                width: nodeRect.width,
+                height: nodeRect.height
+            };
+            
+            let hasCollision = false;
+            for (const otherNode of otherNodes) {
+                const otherRect = otherNode.getBoundingClientRect();
+                const otherRelativeRect = {
+                    left: otherRect.left - containerRect.left,
+                    top: otherRect.top - containerRect.top,
+                    width: otherRect.width,
+                    height: otherRect.height
+                };
+                
+                if (LayoutUtils.checkCollision(newRect, otherRelativeRect)) {
+                    hasCollision = true;
+                    break;
+                }
+            }
+            
+            // 如果没有碰撞，允许移动到新位置
+            return !hasCollision;
+        }
+
+        // 全局调试模式
+        window.debugMode = false; // 设置为false禁用调试模式
+        
+        // 文字编辑功能
+        function makeTextEditable(element, onSave) {
+            // 如果已经是编辑状态，直接返回
+            if (element.classList.contains('editing')) {
+                return;
+            }
+            
+            const originalText = element.textContent.trim();
+            const originalHTML = element.innerHTML;
+            
+            // 创建输入框
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalText;
+            input.className = 'text-edit-input';
+            
+            // 复制原始元素的样式
+            const computedStyle = window.getComputedStyle(element);
+            input.style.cssText = `
+                background: transparent;
+                border: none;
+                outline: none;
+                font-family: ${computedStyle.fontFamily};
+                font-size: ${computedStyle.fontSize};
+                font-weight: ${computedStyle.fontWeight};
+                color: ${computedStyle.color};
+                width: 100%;
+                padding: 0;
+                margin: 0;
+                box-sizing: border-box;
+            `;
+            
+            // 替换元素内容
+            element.innerHTML = '';
+            element.appendChild(input);
+            element.classList.add('editing');
+            
+            // 聚焦并选中文本
+            input.focus();
+            input.select();
+            
+            // 处理保存
+            function saveText() {
+                const newText = input.value.trim();
+                if (newText !== originalText) {
+                    // 调用保存回调
+                    if (onSave && typeof onSave === 'function') {
+                        onSave(newText, originalText);
+                    } else {
+                        // 默认保存方式
+                        element.textContent = newText;
+                    }
+                } else {
+                    // 恢复原始内容
+                    element.innerHTML = originalHTML;
+                }
+                element.classList.remove('editing');
+            }
+            
+            // 处理取消
+            function cancelEdit() {
+                element.innerHTML = originalHTML;
+                element.classList.remove('editing');
+            }
+            
+            // 事件监听
+            input.addEventListener('blur', saveText);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveText();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+            
+            // 防止事件冒泡
+            input.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            input.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        // 为节点添加文字编辑功能
+        function addTextEditingToNode(node) {
+            // 为标题添加编辑功能
+            const titleElements = node.querySelectorAll('.node-title');
+            titleElements.forEach(title => {
+                title.style.cursor = 'text';
+                title.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    makeTextEditable(this, function(newText, originalText) {
+                        this.textContent = newText;
+                        // 这里可以添加保存到API的逻辑
+                        console.log('标题已更新:', originalText, '->', newText);
+                    }.bind(this));
+                });
+            });
+            
+            // 为关键词项添加编辑功能
+            const keywordItems = node.querySelectorAll('.keyword-item span');
+            keywordItems.forEach(span => {
+                span.style.cursor = 'text';
+                span.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    makeTextEditable(this, function(newText, originalText) {
+                        this.textContent = newText;
+                        // 更新data-keyword属性
+                        const keywordItem = this.closest('.keyword-item');
+                        if (keywordItem) {
+                            keywordItem.dataset.keyword = newText;
+                        }
+                        console.log('关键词已更新:', originalText, '->', newText);
+                    }.bind(this));
+                });
+            });
+            
+            // 为普通文本项添加编辑功能
+            const textItems = node.querySelectorAll('.node-item:not(.keyword-item)');
+            textItems.forEach(item => {
+                const textElement = item.querySelector('span') || item;
+                if (textElement && !textElement.querySelector('i')) {
+                    textElement.style.cursor = 'text';
+                    textElement.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        makeTextEditable(this, function(newText, originalText) {
+                            this.textContent = newText;
+                            console.log('文本已更新:', originalText, '->', newText);
+                        }.bind(this));
+                    });
+                }
+            });
+        }
+
+        // 删除连接线函数
+        function deleteConnection(connectionOrId, showConfirmation = true) {
+            // 如果传入的是ID，则获取连接对象
+            let connection;
+            if (typeof connectionOrId === 'string' || typeof connectionOrId === 'number') {
+                console.log(`通过ID删除连接线: ${connectionOrId}`);
+                connection = jsPlumbInstance.getConnection(connectionOrId);
+                if (!connection) {
+                    console.error(`未找到ID为 ${connectionOrId} 的连接线`);
+                    showNotification(`未找到连接线`, 'error');
+                    return false;
+                }
+            } else {
+                console.log(`通过连接对象删除连接线: ${connectionOrId.id}`);
+                connection = connectionOrId;
+            }
+            
+            const connectionLabel = connection.getOverlay("label");
+            const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+            
+            if (!showConfirmation || confirm(`确定要删除"${labelText}"连接吗？\n\n删除连接线不会删除节点，只会断开节点间的连接关系。`)) {
+                // 添加删除动画效果
+                connection.setPaintStyle({ 
+                    stroke: '#ef4444',
+                    strokeWidth: 3
+                });
+                
+                // 延迟删除，让用户看到删除效果
+                setTimeout(() => {
+                    jsPlumbInstance.deleteConnection(connection);
+                    console.log(`已删除连接线: ${labelText} (ID: ${connection.id})`);
+                    
+                    // 显示删除成功提示
+                    showNotification(`已删除连接线: ${labelText}`, 'success');
+                    
+                    // 如果连接管理面板是打开的，更新面板内容
+                    updateConnectionManagerPanel();
+                }, 200);
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // 删除节点间的所有连接
+        function deleteConnectionsBetweenNodes(sourceNode, targetNode) {
+            const connections = jsPlumbInstance.getConnections({
+                source: sourceNode,
+                target: targetNode
+            });
+            
+            connections.forEach(connection => {
+                deleteConnection(connection, false);
+            });
+            
+            return connections.length;
+        }
+        
+        // 删除节点的所有连接
+        function deleteAllConnectionsForNode(node) {
+            const connections = jsPlumbInstance.getConnections({
+                source: node
+            });
+            
+            const targetConnections = jsPlumbInstance.getConnections({
+                target: node
+            });
+            
+            const allConnections = [...connections, ...targetConnections];
+            
+            allConnections.forEach(connection => {
+                deleteConnection(connection, false);
+            });
+            
+            // 更新连接管理面板
+            updateConnectionManagerPanel();
+            
+            return allConnections.length;
+        }
+        
+        // 显示通知消息
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+            
+            // 根据类型设置样式
+            switch (type) {
+                case 'success':
+                    notification.className += ' bg-green-500 text-white';
+                    break;
+                case 'error':
+                    notification.className += ' bg-red-500 text-white';
+                    break;
+                case 'warning':
+                    notification.className += ' bg-yellow-500 text-white';
+                    break;
+                default:
+                    notification.className += ' bg-blue-500 text-white';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 显示动画
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // 为所有连接添加右键菜单
+        jsPlumbInstance.bind("contextmenu", function(connection, originalEvent) {
+            // 阻止默认右键菜单
+            originalEvent.preventDefault();
+            originalEvent.stopPropagation();
+            
+            // 获取连接信息
+            const connectionLabel = connection.getOverlay("label");
+            const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+            const sourceNode = connection.source;
+            const targetNode = connection.target;
+            
+            // 创建右键菜单
+            const contextMenu = document.createElement('div');
+            contextMenu.className = 'fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1';
+            contextMenu.style.left = originalEvent.pageX + 'px';
+            contextMenu.style.top = originalEvent.pageY + 'px';
+            
+            contextMenu.innerHTML = `
+                <div class="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
+                    连接线操作: ${labelText}
+                </div>
+                <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" onclick="deleteConnection(${connection.id}, true)">
+                    <i class="fa fa-trash mr-2 text-red-500"></i>
+                    删除连接线
+                </button>
+                <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" onclick="showConnectionInfo(${connection.id})">
+                    <i class="fa fa-info-circle mr-2 text-blue-500"></i>
+                    连接信息
+                </button>
+                <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" onclick="editConnectionLabel(${connection.id})">
+                    <i class="fa fa-edit mr-2 text-green-500"></i>
+                    编辑标签
+                </button>
+            `;
+            
+            document.body.appendChild(contextMenu);
+            
+            // 点击其他地方关闭菜单
+            const closeMenu = function() {
+                if (document.body.contains(contextMenu)) {
+                    document.body.removeChild(contextMenu);
+                }
+                document.removeEventListener('click', closeMenu);
+                document.removeEventListener('contextmenu', closeMenu);
+            };
+            
+            document.addEventListener('click', closeMenu);
+            document.addEventListener('contextmenu', closeMenu);
+        });
+        
+        // 显示连接信息
+        function showConnectionInfo(connectionId) {
+            const connection = jsPlumbInstance.getConnection(connectionId);
+            if (!connection) return;
+            
+            const sourceNode = connection.source;
+            const targetNode = connection.target;
+            const connectionLabel = connection.getOverlay("label");
+            const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+            
+            const sourceText = sourceNode.querySelector('.node-title') ? 
+                sourceNode.querySelector('.node-title').textContent : 
+                sourceNode.querySelector('.node-item span') ? 
+                sourceNode.querySelector('.node-item span').textContent : '未知节点';
+            
+            const targetText = targetNode.querySelector('.node-title') ? 
+                targetNode.querySelector('.node-title').textContent : 
+                targetNode.querySelector('.node-item span') ? 
+                targetNode.querySelector('.node-item span').textContent : '未知节点';
+            
+            alert(`连接线信息:\n\n标签: ${labelText}\n源节点: ${sourceText}\n目标节点: ${targetText}\n连接ID: ${connectionId}`);
+        }
+        
+        // 编辑连接标签
+        function editConnectionLabel(connectionId) {
+            const connection = jsPlumbInstance.getConnection(connectionId);
+            if (!connection) return;
+            
+            const connectionLabel = connection.getOverlay("label");
+            const currentLabel = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "";
+            
+            const newLabel = prompt('请输入新的连接线标签:', currentLabel);
+            if (newLabel !== null && newLabel.trim() !== '') {
+                connectionLabel.setLabel(newLabel.trim());
+                showNotification('连接线标签已更新', 'success');
+            }
+        }
+
+        // 显示连接管理面板
+        function showConnectionManager() {
+            const connections = jsPlumbInstance.getConnections();
+            
+            if (connections.length === 0) {
+                showNotification('当前没有连接线', 'info');
+                return;
+            }
+            
+            const panel = document.createElement('div');
+            panel.className = 'fixed right-4 top-20 w-80 bg-white rounded-xl shadow-lg p-4 max-h-[calc(100vh-8rem)] overflow-y-auto z-50';
+            panel.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">连接线管理</h3>
+                    <button class="text-gray-400 hover:text-gray-600" onclick="this.closest('.fixed').remove()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <div class="flex gap-2 mb-2">
+                        <button class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors" onclick="deleteAllConnections()">
+                            <i class="fa fa-trash mr-1"></i>删除所有
+                        </button>
+                        <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors" onclick="exportConnections()">
+                            <i class="fa fa-download mr-1"></i>导出
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        共 ${connections.length} 个连接线
+                    </div>
+                </div>
+                <div class="space-y-2 max-h-96 overflow-y-auto">
+                    ${connections.map((conn, index) => {
+                        const connectionLabel = conn.getOverlay("label");
+                        const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                        const sourceNode = conn.source;
+                        const targetNode = conn.target;
+                        
+                        const sourceText = sourceNode.querySelector('.node-title') ? 
+                            sourceNode.querySelector('.node-title').textContent : 
+                            sourceNode.querySelector('.node-item span') ? 
+                            sourceNode.querySelector('.node-item span').textContent : '未知节点';
+                        
+                        const targetText = targetNode.querySelector('.node-title') ? 
+                            targetNode.querySelector('.node-title').textContent : 
+                            targetNode.querySelector('.node-item span') ? 
+                            targetNode.querySelector('.node-item span').textContent : '未知节点';
+                        
+                        return `
+                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-sm font-medium text-gray-800">${labelText}</div>
+                                    <button class="text-red-500 hover:text-red-700 text-sm" onclick="window.deleteConnectionByIndex(${index})">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-600">
+                                    <div>从: ${sourceText}</div>
+                                    <div>到: ${targetText}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // 检查是否已存在面板，若存在则替换
+            const existingPanel = document.querySelector('.fixed.right-4.top-20.w-80');
+            if (existingPanel) {
+                existingPanel.replaceWith(panel);
+            } else {
+                document.body.appendChild(panel);
+            }
+        }
+        
+        // 删除所有连接线
+        function deleteAllConnections() {
+            const connections = jsPlumbInstance.getConnections();
+            
+            if (connections.length === 0) {
+                showNotification('没有可删除的连接线', 'info');
+                return;
+            }
+            
+            if (confirm(`确定要删除所有 ${connections.length} 个连接线吗？\n\n此操作不可撤销。`)) {
+                connections.forEach(connection => {
+                    deleteConnection(connection, false);
+                });
+                
+                showNotification(`已删除所有 ${connections.length} 个连接线`, 'success');
+                
+                // 关闭面板（updateConnectionManagerPanel会自动处理）
+                updateConnectionManagerPanel();
+            }
+        }
+        
+        // 导出连接线信息
+        function exportConnections() {
+            const connections = jsPlumbInstance.getConnections();
+            
+            if (connections.length === 0) {
+                showNotification('没有可导出的连接线', 'info');
+                return;
+            }
+            
+            const exportData = connections.map(conn => {
+                const connectionLabel = conn.getOverlay("label");
+                const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                const sourceNode = conn.source;
+                const targetNode = conn.target;
+                
+                const sourceText = sourceNode.querySelector('.node-title') ? 
+                    sourceNode.querySelector('.node-title').textContent : 
+                    sourceNode.querySelector('.node-item span') ? 
+                    sourceNode.querySelector('.node-item span').textContent : '未知节点';
+                
+                const targetText = targetNode.querySelector('.node-title') ? 
+                    targetNode.querySelector('.node-title').textContent : 
+                    targetNode.querySelector('.node-item span') ? 
+                    targetNode.querySelector('.node-item span').textContent : '未知节点';
+                
+                return {
+                    id: conn.id,
+                    label: labelText,
+                    source: sourceText,
+                    target: targetText,
+                    timestamp: new Date().toISOString()
+                };
+            });
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `connections_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            link.click();
+            
+            showNotification('连接线信息已导出', 'success');
+        }
+
+        // 更新连接管理面板
+        function updateConnectionManagerPanel() {
+            const existingPanel = document.querySelector('.fixed.right-4.top-20.w-80');
+            if (!existingPanel) {
+                return; // 面板没有打开，不需要更新
+            }
+            
+            const connections = jsPlumbInstance.getConnections();
+            
+            if (connections.length === 0) {
+                // 如果没有连接线了，关闭面板并显示提示
+                existingPanel.remove();
+                showNotification('所有连接线已删除', 'info');
+                return;
+            }
+            
+            // 更新面板内容
+            const panelContent = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">连接线管理</h3>
+                    <button class="text-gray-400 hover:text-gray-600" onclick="this.closest('.fixed').remove()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <div class="flex gap-2 mb-2">
+                        <button class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors" onclick="deleteAllConnections()">
+                            <i class="fa fa-trash mr-1"></i>删除所有
+                        </button>
+                        <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors" onclick="exportConnections()">
+                            <i class="fa fa-download mr-1"></i>导出
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        共 ${connections.length} 个连接线
+                    </div>
+                </div>
+                <div class="space-y-2 max-h-96 overflow-y-auto">
+                    ${connections.map((conn, index) => {
+                        const connectionLabel = conn.getOverlay("label");
+                        const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                        const sourceNode = conn.source;
+                        const targetNode = conn.target;
+                        
+                        const sourceText = sourceNode.querySelector('.node-title') ? 
+                            sourceNode.querySelector('.node-title').textContent : 
+                            sourceNode.querySelector('.node-item span') ? 
+                            sourceNode.querySelector('.node-item span').textContent : '未知节点';
+                        
+                        const targetText = targetNode.querySelector('.node-title') ? 
+                            targetNode.querySelector('.node-title').textContent : 
+                            targetNode.querySelector('.node-item span') ? 
+                            targetNode.querySelector('.node-item span').textContent : '未知节点';
+                        
+                        return `
+                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-sm font-medium text-gray-800">${labelText}</div>
+                                    <button class="text-red-500 hover:text-red-700 text-sm" onclick="window.deleteConnectionByIndex(${index})">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-600">
+                                    <div>从: ${sourceText}</div>
+                                    <div>到: ${targetText}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            existingPanel.innerHTML = panelContent;
+        }
+
+        // 测试连接线删除功能
+        function testConnectionDeletion() {
+            const connections = jsPlumbInstance.getConnections();
+            console.log(`当前连接线数量: ${connections.length}`);
+            
+            if (connections.length > 0) {
+                const firstConnection = connections[0];
+                const connectionLabel = firstConnection.getOverlay("label");
+                const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                console.log(`测试删除连接线: ${labelText}`);
+                
+                // 测试删除第一个连接线
+                deleteConnection(firstConnection, true);
+            } else {
+                console.log('没有连接线可以测试删除');
+            }
+        }
+        
+        // 全局调试函数
+        window.testConnectionDeletion = testConnectionDeletion;
+
+        // 调试连接线删除功能
+        function debugConnectionDeletion() {
+            console.log('=== 连接线删除功能调试 ===');
+            
+            const connections = jsPlumbInstance.getConnections();
+            console.log(`当前连接线数量: ${connections.length}`);
+            
+            if (connections.length > 0) {
+                connections.forEach((conn, index) => {
+                    const connectionLabel = conn.getOverlay("label");
+                    const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                    console.log(`连接线 ${index + 1}: ID=${conn.id}, 标签="${labelText}"`);
+                });
+                
+                // 测试第一个连接线
+                const firstConnection = connections[0];
+                const connectionLabel = firstConnection.getOverlay("label");
+                const labelText = connectionLabel ? connectionLabel.getLabel().replace(" (点击删除)", "") : "连接线";
+                console.log(`准备测试删除连接线: ${labelText} (ID: ${firstConnection.id})`);
+                
+                // 检查事件绑定
+                console.log('检查事件绑定状态...');
+                console.log('jsPlumb实例状态:', jsPlumbInstance);
+                
+                return firstConnection;
+            } else {
+                console.log('没有连接线可以测试删除');
+                return null;
+            }
+        }
+        
+        // 全局调试函数
+        window.debugConnectionDeletion = debugConnectionDeletion;
+        
+        // 测试连接管理面板删除功能
+        function testConnectionManagerDeletion() {
+            console.log('=== 测试连接管理面板删除功能 ===');
+            
+            const connections = jsPlumbInstance.getConnections();
+            console.log(`当前连接线数量: ${connections.length}`);
+            
+            if (connections.length > 0) {
+                // 显示连接管理面板
+                showConnectionManager();
+                
+                console.log('连接管理面板已打开，请点击面板中的删除按钮测试删除功能');
+                console.log('或者使用以下命令直接测试删除第一个连接线:');
+                console.log(`deleteConnection(${connections[0].id}, false)`);
+                
+                return connections[0];
+            } else {
+                console.log('没有连接线可以测试删除');
+                return null;
+            }
+        }
+        
+        // 全局测试函数
+        window.testConnectionManagerDeletion = testConnectionManagerDeletion;
+
+        // 在 script 末尾添加：
+        window.deleteConnectionByIndex = function(index) {
+            const connections = jsPlumbInstance.getConnections();
+            if (connections[index]) {
+                deleteConnection(connections[index], false);
+            } else {
+                showNotification('未找到对应的连接线', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

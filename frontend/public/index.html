@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI关键词生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.6/js/jsplumb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        neutral: '#1F2937',
+                        light: '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .mindmap-container {
+                @apply relative w-full h-[calc(100vh-6rem)] bg-white overflow-auto p-8;
+            }
+            .mindmap-node {
+                @apply absolute bg-white rounded-lg border border-gray-200 transition-all duration-300;
+                min-width: 180px;
+            }
+            .node-question {
+                @apply bg-white border-gray-200;
+            }
+            .node-keyword {
+                @apply bg-white border-gray-200;
+            }
+            .node-text {
+                @apply bg-white border-gray-200;
+            }
+            .node-header {
+                @apply p-2 flex items-center justify-between;
+            }
+            .node-type-badge {
+                @apply px-2 py-0.5 text-xs rounded-full font-medium text-gray-500 bg-gray-100;
+            }
+            .node-content {
+                @apply p-2;
+            }
+            .node-item {
+                @apply p-2 rounded text-sm flex items-center gap-2 hover:bg-gray-50;
+            }
+            .node-item i {
+                @apply text-gray-400;
+            }
+            .node-item.active {
+                @apply bg-gray-50;
+            }
+            .node-actions {
+                @apply flex gap-1 mt-2 px-2;
+            }
+            .node-action-btn {
+                @apply text-xs text-gray-500 hover:text-gray-700;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <button id="openPanelBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow flex items-center transition-all duration-300">
+                <i class="fa fa-magic mr-2"></i>
+                <span>AI生成</span>
+            </button>
+            <h1 class="text-xl font-bold text-neutral">关键词生成器</h1>
+            <div id="userArea" class="flex items-center gap-4">
+                <button id="loginBtn" class="text-gray-600 hover:text-primary transition-colors">
+                    登录
+                </button>
+                <button id="registerBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-all duration-300">
+                    注册
+                </button>
+            </div>
+            <div id="userInfo" class="flex items-center gap-3 hidden">
+                <span class="text-gray-600" id="username"></span>
+                <button id="logoutBtn" class="text-gray-600 hover:text-red-500 transition-colors">
+                    退出
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <div class="text-center mb-12">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-neutral mb-4">探索AI生成的关键词</h2>
+            <div class="max-w-2xl mx-auto">
+                <p class="text-gray-600 mb-6">点击左上角按钮，输入提示词，获取人工智能相关关键词拓展，探索更多可能性</p>
+                <div class="relative">
+                    <input type="text" id="mainPrompt" placeholder="输入关键词..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary shadow-sm">
+                    <button id="mainGenerateBtn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-all duration-300">
+                        <i class="fa fa-rocket mr-1"></i>生成
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 示例卡片 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="h-48 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <i class="fa fa-lightbulb-o text-6xl text-primary/60"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-2">创意灵感</h3>
+                    <p class="text-gray-600">输入主题，获取相关创意关键词和拓展想法</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="h-48 bg-gradient-to-br from-blue-200 to-purple-200 flex items-center justify-center">
+                    <i class="fa fa-search text-6xl text-blue-500/60"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-2">关键词研究</h3>
+                    <p class="text-gray-600">拓展您的搜索词，发现更多相关主题和内容</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="h-48 bg-gradient-to-br from-green-200 to-teal-200 flex items-center justify-center">
+                    <i class="fa fa-puzzle-piece text-6xl text-green-500/60"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-2">内容拓展</h3>
+                    <p class="text-gray-600">深入挖掘主题，获取相关文本和内容建议</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 结果页面 -->
+    <div id="resultPage" class="fixed inset-0 bg-white z-50 hidden">
+        <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-40">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <button id="backToHomeBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow flex items-center transition-all duration-300">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    <span>返回</span>
+                </button>
+                <h1 class="text-xl font-bold text-neutral">AI 思维导图</h1>
+                <div class="w-10"></div>
+            </div>
+        </header>
+
+        <div class="mindmap-container" id="mindMapContainer">
+            <!-- 思维导图内容将在这里动态生成 -->
+        </div>
+    </div>
+
+    <footer class="bg-neutral text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-xl font-bold">AI关键词生成器</h2>
+                    <p class="text-gray-400 mt-1">由AI驱动的关键词拓展工具</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400">
+                <p>© 2025 AI关键词生成器. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 登录模态框 -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-neutral">登录</h3>
+                <button class="closeModal text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" name="username" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="loginUsernameError"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" name="password" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="loginPasswordError"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="ml-2 text-sm text-gray-600">记住我</span>
+                    </label>
+                    <a href="#" class="text-sm text-primary hover:text-primary/80">忘记密码？</a>
+                </div>
+                <button type="submit" disabled
+                    class="w-full bg-gray-400 text-white py-2 rounded-lg shadow transition-all duration-300">
+                    登录
+                </button>
+                <p class="text-center text-sm text-gray-600">
+                    还没有账号？
+                    <button type="button" id="switchToRegister" class="text-primary hover:text-primary/80">立即注册</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-neutral">注册</h3>
+                <button class="closeModal text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" name="username" required minlength="3" maxlength="20"
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerUsernameError"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                    <input type="email" name="email" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerEmailError"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" name="password" required minlength="6"
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerPasswordError"></div>
+                    <p class="text-xs text-gray-500 mt-1">至少6个字符</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">确认密码</label>
+                    <input type="password" name="confirmPassword" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary">
+                    <div class="form-error" id="registerConfirmPasswordError"></div>
+                </div>
+                <button type="submit" disabled
+                    class="w-full bg-gray-400 text-white py-2 rounded-lg shadow transition-all duration-300">
+                    注册
+                </button>
+                <p class="text-center text-sm text-gray-600">
+                    已有账号？
+                    <button type="button" id="switchToLogin" class="text-primary hover:text-primary/80">立即登录</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API配置 - 注意：实际使用时需要替换为真实的API地址
+        const API_BASE_URL = 'http://localhost:8080/api';
+        
+        // 全局用户状态
+        let currentUser = null;
+        
+        // 生成关键词
+        async function generateKeywords(prompt) {
+            try {
+                // 模拟API调用
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve({
+                            id: Date.now(),
+                            title: '关键词结果',
+                            type: 'AI生成',
+                            prompt: prompt,
+                            keywords: JSON.stringify([
+                                `${prompt}应用`,
+                                `${prompt}技术`,
+                                `${prompt}发展`,
+                                `${prompt}趋势`,
+                                `${prompt}工具`,
+                                `${prompt}案例`,
+                                `${prompt}原理`
+                            ])
+                        });
+                    }, 800);
+                });
+            } catch (error) {
+                console.error('生成关键词失败:', error);
+                throw error;
+            }
+        }
+
+        // 获取历史记录
+        async function getKeywordHistory() {
+            try {
+                // 模拟API调用
+                const history = localStorage.getItem('keyword_history');
+                return history ? JSON.parse(history) : [];
+            } catch (error) {
+                console.error('获取历史记录失败:', error);
+                throw error;
+            }
+        }
+
+        // 保存关键词生成记录
+        async function saveKeyword(keyword) {
+            try {
+                // 模拟API调用
+                const history = await getKeywordHistory();
+                history.unshift(keyword);
+                localStorage.setItem('keyword_history', JSON.stringify(history));
+                return keyword;
+            } catch (error) {
+                console.error('保存记录失败:', error);
+                throw error;
+            }
+        }
+
+        // 获取单个记录
+        async function getKeywordById(id) {
+            try {
+                // 模拟API调用
+                const history = await getKeywordHistory();
+                return history.find(item => item.id === id);
+            } catch (error) {
+                console.error('获取记录失败:', error);
+                throw error;
+            }
+        }
+
+        // 渲染思维导图
+        function renderMindMap(keyword) {
+            const container = document.getElementById('mindMapContainer');
+            container.innerHTML = ''; // 清空容器
+
+            // 创建中心节点（AI拓展）
+            const centerNode = document.createElement('div');
+            centerNode.className = 'mindmap-node node-question';
+            centerNode.style.left = '30%';
+            centerNode.style.top = '50%';
+            centerNode.style.transform = 'translate(-50%, -50%)';
+            centerNode.innerHTML = `
+                <div class="node-header">
+                    <span class="node-type-badge">question</span>
+                </div>
+                <div class="node-content">
+                    <div class="node-item active">
+                        <i class="fa fa-plus"></i>
+                        AI拓展
+                    </div>
+                </div>
+                <div class="node-actions">
+                    <button class="node-action-btn">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    <button class="node-action-btn">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(centerNode);
+
+            // 创建关键词节点
+            const keywords = JSON.parse(keyword.keywords);
+            const keywordNode = document.createElement('div');
+            keywordNode.className = 'mindmap-node node-keyword';
+            keywordNode.style.left = '50%';
+            keywordNode.style.top = '50%';
+            keywordNode.style.transform = 'translate(-50%, -50%)';
+            keywordNode.innerHTML = `
+                <div class="node-header">
+                    <span class="node-type-badge">keyword</span>
+                </div>
+                <div class="node-content">
+                    ${keywords.map(kw => `
+                        <div class="node-item">
+                            <i class="fa fa-plus"></i>
+                            ${kw}
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="node-actions">
+                    <button class="node-action-btn">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    <button class="node-action-btn">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(keywordNode);
+
+            // 创建总结节点
+            const summaryNode = document.createElement('div');
+            summaryNode.className = 'mindmap-node node-text';
+            summaryNode.style.left = '70%';
+            summaryNode.style.top = '50%';
+            summaryNode.style.transform = 'translate(-50%, -50%)';
+            summaryNode.innerHTML = `
+                <div class="node-header">
+                    <span class="node-type-badge">text</span>
+                </div>
+                <div class="node-content">
+                    <div class="node-item">
+                        <i class="fa fa-plus"></i>
+                        拓展：${keyword.prompt}
+                    </div>
+                </div>
+                <div class="node-actions">
+                    <button class="node-action-btn">
+                        <i class="fa fa-pencil"></i>
+                    </button>
+                    <button class="node-action-btn">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(summaryNode);
+
+            // 连接节点
+            jsPlumbInstance.connect({
+                source: centerNode,
+                target: keywordNode,
+                connector: ['Straight'],
+                paintStyle: { 
+                    stroke: '#94a3b8',
+                    strokeWidth: 1
+                },
+                endpointStyle: { 
+                    fill: 'transparent',
+                    radius: 2
+                },
+                anchors: ['Right', 'Left'],
+                overlays: [
+                    ['Arrow', {
+                        location: 1,
+                        width: 6,
+                        length: 6
+                    }]
+                ]
+            });
+
+            jsPlumbInstance.connect({
+                source: keywordNode,
+                target: summaryNode,
+                connector: ['Straight'],
+                paintStyle: { 
+                    stroke: '#94a3b8',
+                    strokeWidth: 1
+                },
+                endpointStyle: { 
+                    fill: 'transparent',
+                    radius: 2
+                },
+                anchors: ['Right', 'Left'],
+                overlays: [
+                    ['Arrow', {
+                        location: 1,
+                        width: 6,
+                        length: 6
+                    }]
+                ]
+            });
+        }
+
+        // 显示历史记录
+        async function showHistory() {
+            try {
+                const history = await getKeywordHistory();
+                const historyContainer = document.createElement('div');
+                historyContainer.className = 'fixed right-4 top-20 w-80 bg-white rounded-xl shadow-lg p-4 max-h-[calc(100vh-8rem)] overflow-y-auto';
+                historyContainer.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-4">历史记录</h3>
+                    <div class="space-y-3">
+                        ${history.map(item => `
+                            <div class="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors" 
+                                 onclick="loadKeyword(${item.id})">
+                                <div class="font-medium">${item.title}</div>
+                                <div class="text-sm text-gray-600">${item.prompt}</div>
+                                <div class="text-xs text-gray-400 mt-1">${new Date(item.id).toLocaleString()}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                // 检查是否已存在历史记录面板，若存在则替换
+                const existingPanel = document.querySelector('.fixed.right-4.top-20.w-80');
+                if (existingPanel) {
+                    existingPanel.replaceWith(historyContainer);
+                } else {
+                    document.body.appendChild(historyContainer);
+                }
+            } catch (error) {
+                console.error('显示历史记录失败:', error);
+            }
+        }
+
+        // 加载单个关键词记录
+        async function loadKeyword(id) {
+            try {
+                const keyword = await getKeywordById(id);
+                if (keyword) {
+                    document.getElementById('resultPage').classList.remove('hidden');
+                    renderMindMap(keyword);
+                } else {
+                    alert('记录不存在或已被删除');
+                }
+            } catch (error) {
+                console.error('加载记录失败:', error);
+                alert('加载记录失败，请稍后重试');
+            }
+        }
+
+        // 初始化jsPlumb
+        const jsPlumbInstance = jsPlumb.getInstance({
+            Connector: ['Straight'],
+            Endpoint: ['Dot', { radius: 2 }],
+            PaintStyle: { 
+                stroke: '#94a3b8',
+                strokeWidth: 1
+            },
+            HoverPaintStyle: { 
+                stroke: '#64748b',
+                strokeWidth: 1.5
+            },
+            ConnectionOverlays: [
+                ['Arrow', {
+                    location: 1,
+                    width: 6,
+                    length: 6
+                }]
+            ],
+            Container: 'mindMapContainer'
+        });
+
+        // 表单验证函数
+        function validateLoginForm() {
+            const username = document.querySelector('#loginForm input[name="username"]').value.trim();
+            const password = document.querySelector('#loginForm input[name="password"]').value;
+            
+            let isValid = true;
+            
+            // 验证用户名
+            if (!username) {
+                document.getElementById('loginUsernameError').textContent = '请输入用户名';
+                isValid = false;
+            } else {
+                document.getElementById('loginUsernameError').textContent = '';
+            }
+            
+            // 验证密码
+            if (!password) {
+                document.getElementById('loginPasswordError').textContent = '请输入密码';
+                isValid = false;
+            } else {
+                document.getElementById('loginPasswordError').textContent = '';
+            }
+            
+            // 更新按钮状态
+            const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+            if (isValid) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400');
+                submitBtn.classList.add('bg-primary');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-400');
+                submitBtn.classList.remove('bg-primary');
+            }
+            
+            return isValid;
+        }
+
+        function validateRegisterForm() {
+            const username = document.querySelector('#registerForm input[name="username"]').value.trim();
+            const email = document.querySelector('#registerForm input[name="email"]').value.trim();
+            const password = document.querySelector('#registerForm input[name="password"]').value;
+            const confirmPassword = document.querySelector('#registerForm input[name="confirmPassword"]').value;
+            
+            let isValid = true;
+            
+            // 验证用户名
+            if (!username) {
+                document.getElementById('registerUsernameError').textContent = '请输入用户名';
+                isValid = false;
+            } else if (username.length < 3) {
+                document.getElementById('registerUsernameError').textContent = '用户名至少3个字符';
+                isValid = false;
+            } else {
+                document.getElementById('registerUsernameError').textContent = '';
+            }
+            
+            // 验证邮箱
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email) {
+                document.getElementById('registerEmailError').textContent = '请输入邮箱';
+                isValid = false;
+            } else if (!emailRegex.test(email)) {
+                document.getElementById('registerEmailError').textContent = '请输入有效的邮箱地址';
+                isValid = false;
+            } else {
+                document.getElementById('registerEmailError').textContent = '';
+            }
+            
+            // 验证密码
+            if (!password) {
+                document.getElementById('registerPasswordError').textContent = '请输入密码';
+                isValid = false;
+            } else if (password.length < 6) {
+                document.getElementById('registerPasswordError').textContent = '密码至少6个字符';
+                isValid = false;
+            } else {
+                document.getElementById('registerPasswordError').textContent = '';
+            }
+            
+            // 验证确认密码
+            if (!confirmPassword) {
+                document.getElementById('registerConfirmPasswordError').textContent = '请确认密码';
+                isValid = false;
+            } else if (confirmPassword !== password) {
+                document.getElementById('registerConfirmPasswordError').textContent = '两次输入的密码不一致';
+                isValid = false;
+            } else {
+                document.getElementById('registerConfirmPasswordError').textContent = '';
+            }
+            
+            // 更新按钮状态
+            const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+            if (isValid) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400');
+                submitBtn.classList.add('bg-primary');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-400');
+                submitBtn.classList.remove('bg-primary');
+            }
+            
+            return isValid;
+        }
+
+        // 登录函数
+        async function login(username, password) {
+            try {
+                // 模拟登录API调用
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        // 模拟登录成功
+                        const user = {
+                            id: Date.now(),
+                            username: username,
+                            token: 'fake_token_' + Date.now()
+                        };
+                        
+                        // 保存用户信息到本地存储
+                        localStorage.setItem('user', JSON.stringify(user));
+                        
+                        resolve(user);
+                    }, 800);
+                });
+                
+                /* 实际项目中应使用以下代码调用真实API
+                const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+                    username,
+                    password
+                });
+                
+                return response.data;
+                */
+            } catch (error) {
+                console.error('登录失败:', error);
+                
+                // 显示错误信息
+                if (error.response && error.response.data && error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('登录失败，请检查用户名和密码');
+                }
+                
+                throw error;
+            }
+        }
+
+        // 注册函数
+        async function register(username, email, password) {
+            try {
+                // 模拟注册API调用
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        // 模拟注册成功
+                        const user = {
+                            id: Date.now(),
+                            username: username,
+                            email: email,
+                            token: 'fake_token_' + Date.now()
+                        };
+                        
+                        // 保存用户信息到本地存储
+                        localStorage.setItem('user', JSON.stringify(user));
+                        
+                        resolve(user);
+                    }, 1000);
+                });
+                
+                /* 实际项目中应使用以下代码调用真实API
+                const response = await axios.post(`${API_BASE_URL}/auth/register`, {
+                    username,
+                    email,
+                    password
+                });
+                
+                return response.data;
+                */
+            } catch (error) {
+                console.error('注册失败:', error);
+                
+                // 显示错误信息
+                if (error.response && error.response.data && error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('注册失败，请稍后重试');
+                }
+                
+                throw error;
+            }
+        }
+
+        // 事件处理
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查用户是否已登录
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                document.getElementById('userArea').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('username').textContent = currentUser.username;
+            }
+
+            // 主生成按钮点击事件
+            document.getElementById('mainGenerateBtn').addEventListener('click', async () => {
+                const prompt = document.getElementById('mainPrompt').value.trim();
+                if (!prompt) {
+                    alert('请输入关键词');
+                    return;
+                }
+
+                try {
+                    const loadingBtn = document.getElementById('mainGenerateBtn');
+                    const originalText = loadingBtn.innerHTML;
+                    loadingBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>生成中...';
+                    loadingBtn.disabled = true;
+
+                    const result = await generateKeywords(prompt);
+                    document.getElementById('resultPage').classList.remove('hidden');
+                    renderMindMap(result);
+                    showHistory(); // 更新历史记录
+
+                    loadingBtn.innerHTML = originalText;
+                    loadingBtn.disabled = false;
+                } catch (error) {
+                    alert(error.message);
+                    const loadingBtn = document.getElementById('mainGenerateBtn');
+                    loadingBtn.innerHTML = '<i class="fa fa-rocket mr-1"></i>生成';
+                    loadingBtn.disabled = false;
+                }
+            });
+
+            // 显示历史记录按钮点击事件
+            document.getElementById('openPanelBtn').addEventListener('click', showHistory);
+
+            // 返回按钮事件
+            document.getElementById('backToHomeBtn').addEventListener('click', () => {
+                document.getElementById('resultPage').classList.add('hidden');
+            });
+
+            // 登录注册相关的JavaScript代码
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const switchToRegister = document.getElementById('switchToRegister');
+            const switchToLogin = document.getElementById('switchToLogin');
+            const userArea = document.getElementById('userArea');
+            const userInfo = document.getElementById('userInfo');
+            const usernameSpan = document.getElementById('username');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // 显示登录模态框
+            loginBtn.addEventListener('click', () => {
+                loginModal.classList.remove('hidden');
+                validateLoginForm(); // 初始化验证
+            });
+
+            // 显示注册模态框
+            registerBtn.addEventListener('click', () => {
+                registerModal.classList.remove('hidden');
+                validateRegisterForm(); // 初始化验证
+            });
+
+            // 切换到注册
+            switchToRegister.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+                registerModal.classList.remove('hidden');
+                validateRegisterForm(); // 初始化验证
+            });
+
+            // 切换到登录
+            switchToLogin.addEventListener('click', () => {
+                registerModal.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+                validateLoginForm(); // 初始化验证
+            });
+
+            // 关闭模态框
+            document.querySelectorAll('.closeModal').forEach(button => {
+                button.addEventListener('click', () => {
+                    loginModal.classList.add('hidden');
+                    registerModal.classList.add('hidden');
+                });
+            });
+
+            // 登录表单输入事件 - 实时验证
+            document.querySelectorAll('#loginForm input').forEach(input => {
+                input.addEventListener('input', validateLoginForm);
+            });
+
+            // 注册表单输入事件 - 实时验证
+            document.querySelectorAll('#registerForm input').forEach(input => {
+                input.addEventListener('input', validateRegisterForm);
+            });
+
+            // 登录表单提交
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!validateLoginForm()) return;
+                
+                const username = document.querySelector('#loginForm input[name="username"]').value.trim();
+                const password = document.querySelector('#loginForm input[name="password"]').value;
+                
+                try {
+                    // 显示加载状态
+                    const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>登录中...';
+                    
+                    // 执行登录
+                    const user = await login(username, password);
+                    
+                    // 登录成功
+                    currentUser = user;
+                    userArea.classList.add('hidden');
+                    userInfo.classList.remove('hidden');
+                    usernameSpan.textContent = user.username;
+                    
+                    // 关闭模态框
+                    loginModal.classList.add('hidden');
+                    
+                    // 重置表单
+                    e.target.reset();
+                    
+                    // 恢复按钮状态
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    alert('登录成功！');
+                } catch (error) {
+                    // 恢复按钮状态
+                    const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '登录';
+                }
+            });
+
+            // 注册表单提交
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!validateRegisterForm()) return;
+                
+                const username = document.querySelector('#registerForm input[name="username"]').value.trim();
+                const email = document.querySelector('#registerForm input[name="email"]').value.trim();
+                const password = document.querySelector('#registerForm input[name="password"]').value;
+                
+                try {
+                    // 显示加载状态
+                    const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>注册中...';
+                    
+                    // 执行注册
+                    const user = await register(username, email, password);
+                    
+                    // 注册成功
+                    currentUser = user;
+                    userArea.classList.add('hidden');
+                    userInfo.classList.remove('hidden');
+                    usernameSpan.textContent = user.username;
+                    
+                    // 关闭模态框
+                    registerModal.classList.add('hidden');
+                    
+                    // 重置表单
+                    e.target.reset();
+                    
+                    // 恢复按钮状态
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    alert('注册成功！欢迎使用AI关键词生成器');
+                } catch (error) {
+                    // 恢复按钮状态
+                    const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '注册';
+                }
+            });
+
+            // 退出登录
+            logoutBtn.addEventListener('click', () => {
+                // 移除本地存储中的用户信息
+                localStorage.removeItem('user');
+                currentUser = null;
+                
+                // 更新UI
+                userInfo.classList.add('hidden');
+                userArea.classList.remove('hidden');
+                
+                alert('已成功退出登录');
+            });
+
+            // 导出思维导图为图片
+            window.saveAsImage = function() {
+                alert('思维导图导出功能将在未来版本中实现');
+                // 实际实现需要使用html2canvas等库
+            };
+
+            // 分享思维导图
+            window.shareMindMap = function() {
+                alert('思维导图分享功能将在未来版本中实现');
+                // 实际实现需要后端支持生成分享链接
+            };
+        });
+    </script>
+</body>
+</html>
