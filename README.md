@@ -18,6 +18,8 @@ ThinkGenius 是一款将大型语言模型（LLM）的强大功能与思维导�
 
 ## 🛠️ 技术栈
 
+![ThinkGenius_xitongjiagou.drawio](docs/images/ThinkGenius_xitongjiagou.drawio.png)
+
 - **前端**:
   - [Vue 3](https://vuejs.org/)
   - [Vite](https://vitejs.dev/)
@@ -104,6 +106,8 @@ ThinkGenius2/
 
 ## 📚 详细文档
 
+- [**Draw.io架构图**](./docs/system-architecture.drawio): 可在Draw.io中编辑的架构图。
+- [**架构文档**](./docs/ARCHITECTURE.md): 深入了解系统架构设计和技术选型。
 - [**API 文档**](./docs/API.md): 了解所有后端 API 的详细信息。
 - [**算法文档**](./docs/ALGORITHM.md): 深入了解画布布局和连接线算法。
 - [**数据库文档**](./docs/DATABASE.md): 查看数据库的集合和结构。

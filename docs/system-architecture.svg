@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 渐变定义 - 采用更柔和的现代配色 -->
+    <linearGradient id="presentationGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4361ee;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#3a0ca3;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <linearGradient id="businessGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f72585;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#b5179e;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <linearGradient id="dataGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4895ef;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#1d3557;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4cc9f0;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#00b4d8;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <!-- 增强的阴影滤镜 - 更柔和的阴影效果 -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feOffset dx="3" dy="3" in="blur" result="offsetBlur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- 箭头标记 - 更精致的箭头样式 -->
+    <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#333" />
+    </marker>
+    
+    <!-- 装饰性网格背景 -->
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#eee" stroke-width="0.5" />
+    </pattern>
+  </defs>
+  
+  <!-- 背景 - 添加网格纹理 -->
+  <rect width="1200" height="800" fill="url(#grid)" fill-opacity="0.3"/>
+  <rect width="1200" height="800" fill="#f0f4f8"/>
+  
+  <!-- 标题 - 更醒目的样式 -->
+  <text x="600" y="30" text-anchor="middle" font-family="Inter, sans-serif" font-size="32" font-weight="bold" fill="#1a237e">
+    ThinkGenius2 系统架构图
+  </text>
+  <line x1="400" y1="50" x2="800" y2="50" stroke="#4361ee" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- 展示层 (Presentation Layer) - 整体外框 -->
+  <g id="presentation-layer">
+    <!-- 展示层外框 -->
+    <rect x="50" y="80" width="1100" height="220" rx="20" ry="20" 
+          fill="white" stroke="url(#presentationGradient)" stroke-width="3" filter="url(#shadow)"/>
+    
+    <!-- 展示层标题 -->
+    <text x="600" y="120" text-anchor="middle" font-family="Inter, sans-serif" font-size="24" font-weight="bold" fill="url(#presentationGradient)">
+      展示层 (Presentation Layer)
+    </text>
+    
+    <!-- Web前端 -->
+    <rect x="150" y="160" width="900" height="140" rx="15" ry="15" 
+          fill="url(#presentationGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+    <text x="600" y="190" text-anchor="middle" font-family="Inter, sans-serif" font-size="18" font-weight="bold" fill="white">
+      Web前端
+    </text>
+    <text x="600" y="210" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="rgba(255,255,255,0.9)">
+      Vue 3 + Vite • Tailwind CSS • Axios • Markdown-it • BlockCanvas.vue
+    </text>
+  </g>
+  
+  <!-- 业务层 (Business Layer) - 整体外框 -->
+  <g id="business-layer">
+    <!-- 业务层外框 -->
+    <rect x="50" y="320" width="1100" height="300" rx="20" ry="20" 
+          fill="white" stroke="url(#businessGradient)" stroke-width="3" filter="url(#shadow)"/>
+    
+    <!-- 业务层标题 -->
+    <text x="600" y="360" text-anchor="middle" font-family="Inter, sans-serif" font-size="24" font-weight="bold" fill="url(#businessGradient)">
+      业务层 (Business Layer) - API服务器集群
+    </text>
+    
+    <!-- API服务器节点 -->
+    <g id="api-servers">
+      <!-- API服务器节点1 -->
+      <rect x="100" y="400" width="300" height="120" rx="15" ry="15" 
+            fill="url(#businessGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="250" y="430" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white">
+        API服务器节点1
+      </text>
+      <text x="250" y="450" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="rgba(255,255,255,0.9)">
+        Spring Boot 3 • Java 21 • Port: 8081 • Load Balancer
+      </text>
+      
+      <!-- API服务器节点2 -->
+      <rect x="450" y="400" width="300" height="120" rx="15" ry="15" 
+            fill="url(#businessGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="600" y="430" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white">
+        API服务器节点2
+      </text>
+      <text x="600" y="450" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="rgba(255,255,255,0.9)">
+        Spring Security • JWT认证 • Port: 8082 • Health Check
+      </text>
+      
+      <!-- API服务器节点3 -->
+      <rect x="800" y="400" width="300" height="120" rx="15" ry="15" 
+            fill="url(#businessGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="950" y="430" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white">
+        API服务器节点3
+      </text>
+      <text x="950" y="450" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="rgba(255,255,255,0.9)">
+        RESTful API • CORS支持 • Port: 8083 • Auto Scaling
+      </text>
+    </g>
+    
+    <!-- 核心服务模块 -->
+    <g id="core-services">
+      <!-- AI服务 -->
+      <rect x="100" y="560" width="200" height="80" rx="12" ry="12" 
+            fill="url(#aiGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="200" y="585" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white">
+        AI服务
+      </text>
+      <text x="200" y="600" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)">
+        百度千帆API • 关键词生成
+      </text>
+      
+      <!-- 块管理服务 -->
+      <rect x="350" y="560" width="200" height="80" rx="12" ry="12" 
+            fill="url(#aiGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="450" y="585" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white">
+        块管理服务
+      </text>
+      <text x="450" y="600" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)">
+        BlockService • 位置算法
+      </text>
+      
+      <!-- 用户认证服务 -->
+      <rect x="600" y="560" width="200" height="80" rx="12" ry="12" 
+            fill="url(#aiGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="700" y="585" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white">
+        用户认证服务
+      </text>
+      <text x="700" y="600" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)">
+        UserService • JWT认证
+      </text>
+      
+      <!-- 关系管理服务 -->
+      <rect x="850" y="560" width="200" height="80" rx="12" ry="12" 
+            fill="url(#aiGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+      <text x="950" y="585" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="bold" fill="white">
+        关系管理服务
+      </text>
+      <text x="950" y="600" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="rgba(255,255,255,0.9)">
+        BlockRelationService • 连接线算法
+      </text>
+    </g>
+  </g>
+  
+  <!-- 数据层 (Data Layer) - 整体外框 -->
+  <g id="data-layer">
+    <!-- 数据层外框 -->
+    <rect x="50" y="660" width="1100" height="120" rx="20" ry="20" 
+          fill="white" stroke="url(#dataGradient)" stroke-width="3" filter="url(#shadow)"/>
+    
+    <!-- 数据层标题 -->
+    <text x="600" y="700" text-anchor="middle" font-family="Inter, sans-serif" font-size="24" font-weight="bold" fill="url(#dataGradient)">
+      数据层 (Data Layer)
+    </text>
+    
+    <!-- MongoDB数据库 -->
+    <rect x="400" y="740" width="400" height="60" rx="15" ry="15" 
+          fill="url(#dataGradient)" fill-opacity="0.9" filter="url(#shadow)"/>
+    <text x="600" y="765" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="bold" fill="white">
+      MongoDB 数据库
+    </text>
+    <text x="600" y="780" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="rgba(255,255,255,0.9)">
+      Collections: users, blocks, block_relations, keywords
+    </text>
+  </g>
+  
+  <!-- 数据流向连接线 - 优化样式 -->
+  <g id="data-flow" stroke="#333" stroke-width="2.5" marker-end="url(#arrowhead)">
+    <!-- 前端到API服务器的连接 -->
+    <line x1="600" y1="300" x2="600" y2="320" stroke="url(#presentationGradient)" stroke-width="3"/>
+    
+    <!-- API服务器之间的负载均衡连接 -->
+    <line x1="350" y1="460" x2="450" y2="460" stroke-dasharray="5,3"/>
+    <line x1="750" y1="460" x2="850" y2="460" stroke-dasharray="5,3"/>
+    
+    <!-- 服务模块到数据库的连接 -->
+    <line x1="200" y1="640" x2="500" y2="740" stroke="url(#aiGradient)" stroke-width="3"/>
+    <line x1="450" y1="640" x2="550" y2="740" stroke="url(#aiGradient)" stroke-width="3"/>
+    <line x1="700" y1="640" x2="600" y2="740" stroke="url(#aiGradient)" stroke-width="3"/>
+    <line x1="950" y1="640" x2="650" y2="740" stroke="url(#aiGradient)" stroke-width="3"/>
+    
+    <!-- 外部AI服务连接 -->
+    <line x1="150" y1="560" x2="50" y2="520" stroke="#4cc9f0" stroke-width="3" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+    <text x="30" y="510" font-family="Inter, sans-serif" font-size="12" fill="#4cc9f0" text-anchor="end">百度千帆API</text>
+  </g>
+  
+  <!-- 技术栈说明 - 优化样式 -->
+  <g id="tech-stack">
+    <text x="600" y="790" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="#4a5568">
+      技术架构: 展示层/业务层/数据层三层架构 • 微服务设计 • 云原生支持
+    </text>
+  </g>
+</svg>
