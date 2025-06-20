@@ -32,6 +32,7 @@ ThinkGenius 是一款将大型语言模型（LLM）的强大功能与思维导�
   - [Maven](https://maven.apache.org/)
   - [Spring Security](https://spring.io/projects/spring-security)
   - [JWT (Java Web Token)](https://jwt.io/)
+  - ![16228587ea36a4cc8a7f8c26a9dd6d1](docs/images/16228587ea36a4cc8a7f8c26a9dd6d1.png)
 - **数据库**:
   - [MongoDB](https://www.mongodb.com/)
   - ![数据库.drawio](docs/images/数据库.drawio.png)
