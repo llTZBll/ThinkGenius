@@ -27,7 +27,7 @@ ThinkGenius 是一款将大型语言模型（LLM）的强大功能与思维导�
   - [Markdown-it](https://github.com/markdown-it/markdown-it)
   - [Axios](https://axios-http.com/)
 - **后端**:
-  - [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
+  - [Java 21](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html)
   - [Spring Boot 3](https://spring.io/projects/spring-boot)
   - [Maven](https://maven.apache.org/)
   - [Spring Security](https://spring.io/projects/spring-security)
@@ -59,7 +59,7 @@ ThinkGenius2/
 ### 先决条件
 
 - [Node.js](https://nodejs.org/) (v16+)
-- [JDK 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
+- [JDK 21](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html)
 - [Maven](https://maven.apache.org/download.cgi)
 - [MongoDB](https://www.mongodb.com/try/download/community)
 
