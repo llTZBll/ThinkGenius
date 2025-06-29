@@ -116,4 +116,4 @@ ThinkGenius2/
 
 感谢使用 ThinkGenius！ 
 
-如果本项目对您有帮助，不妨点一个star！
+💖 如果本项目对你有帮助，点个 Star ⭐ 鼓励一下吧！
